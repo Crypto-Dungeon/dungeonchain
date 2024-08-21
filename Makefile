@@ -10,7 +10,7 @@ SIMAPP = ./app
 
 # for dockerized protobuf tools
 DOCKER := $(shell which docker)
-HTTPS_GIT := github.com/CryptoDungeon/dungeonchain.git
+HTTPS_GIT := github.com/Crypto-Dungeon/dungeonchain.git
 
 export GO111MODULE = on
 

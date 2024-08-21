@@ -5,8 +5,8 @@ import (
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
-	"github.com/CryptoDungeon/dungeonchain/app/upgrades"
-	"github.com/CryptoDungeon/dungeonchain/app/upgrades/noop"
+	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
+	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades/noop"
 )
 
 // Upgrades list of chain upgrades

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/CryptoDungeon/dungeonchain/app"
+	"github.com/Crypto-Dungeon/dungeonchain/app"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/prometheus/client_golang/prometheus"

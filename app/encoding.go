@@ -10,7 +10,7 @@ import (
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	"github.com/CryptoDungeon/dungeonchain/app/params"
+	"github.com/Crypto-Dungeon/dungeonchain/app/params"
 )
 
 // MakeEncodingConfig creates a new EncodingConfig with all modules registered. For testing only

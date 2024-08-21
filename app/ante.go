@@ -3,7 +3,7 @@ package app
 import (
 	"errors"
 
-	"github.com/CryptoDungeon/dungeonchain/app/decorators"
+	"github.com/Crypto-Dungeon/dungeonchain/app/decorators"
 	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
 	"github.com/cosmos/ibc-go/v8/modules/core/keeper"
 

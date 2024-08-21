@@ -8,7 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/CryptoDungeon/dungeonchain/app/upgrades"
+	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 )
 
 // NewUpgrade constructor

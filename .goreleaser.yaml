@@ -2,7 +2,7 @@ project_name: dungeonchain
 
 release:
   github:
-    owner: CryptoDungeon
+    owner: Crypto-Dungeon
     name: dungeonchain
   name_template: '{{.Tag}}'
 
@@ -103,9 +103,9 @@ announce:
   webhook:
     message_template: '{ "message": "{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .ReleaseURL }}"}'
     content_type: application/json; charset=utf-8
-  opencollective:
-    title_template: '{{ .Tag }}'
-    message_template: '{{ .ProjectName }} {{ .Tag }} is out!<br/>Check it out at <a href="{{ .ReleaseURL }}">{{ .ReleaseURL }}</a>'
+  # opencollective:
+  #   title_template: '{{ .Tag }}'
+  #   message_template: '{{ .ProjectName }} {{ .Tag }} is out!<br/>Check it out at <a href="{{ .ReleaseURL }}">{{ .ReleaseURL }}</a>'
 git:
   tag_sort: -version:refname
 github_urls:

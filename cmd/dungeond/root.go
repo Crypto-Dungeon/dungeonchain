@@ -25,8 +25,8 @@ import (
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/CryptoDungeon/dungeonchain/app"
-	"github.com/CryptoDungeon/dungeonchain/app/params"
+	"github.com/Crypto-Dungeon/dungeonchain/app"
+	"github.com/Crypto-Dungeon/dungeonchain/app/params"
 )
 
 const (

@@ -2,7 +2,7 @@
 
 set -e
 
-GO_MOD_PACKAGE="github.com/CryptoDungeon/dungeonchain"
+GO_MOD_PACKAGE="github.com/Crypto-Dungeon/dungeonchain"
 
 echo "Generating gogo proto code"
 cd proto

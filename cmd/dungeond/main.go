@@ -5,7 +5,7 @@ import (
 
 	"cosmossdk.io/log"
 
-	"github.com/CryptoDungeon/dungeonchain/app"
+	"github.com/Crypto-Dungeon/dungeonchain/app"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 )

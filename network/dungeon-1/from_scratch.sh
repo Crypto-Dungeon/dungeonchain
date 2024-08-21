@@ -104,7 +104,7 @@ dungeond genesis add-genesis-account dungeon1aj5jlmvqp8dd26rsec6624szthlazdn2vhx
 dungeond genesis add-genesis-account dungeon10r39fueph9fq7a6lgswu4zdsg8t3gxlqzlnzxg 500000000udgn --append # Reece 'Just incase shit its the fan' wallet (500DGN) [Will be returned to CPool after successful launch, incase of gov props needed]
 
 ## === GENESIS / INTERNAL DISTRIBUTION ===
-# - Addresses from Lee, found in: https://github.com/CryptoDungeon/dungeonchain/pull/2
+# - Addresses from Lee, found in: https://github.com/Crypto-Dungeon/dungeonchain/pull/2
 # converted to dragon1 prefix with https://bech32.scrtlabs.com/
 
 # FOUNDERS

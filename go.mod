@@ -1,4 +1,4 @@
-module github.com/CryptoDungeon/dungeonchain
+module github.com/Crypto-Dungeon/dungeonchain
 
 go 1.22.3
 

@@ -12,7 +12,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/CryptoDungeon/dungeonchain/app/decorators"
+	"github.com/Crypto-Dungeon/dungeonchain/app/decorators"
 )
 
 type AnteTestSuite struct {
