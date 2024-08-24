@@ -125,6 +125,12 @@ def manual_additions() -> dict[str, int]:
         try:
             name, address, _, _, _, _, dragon = line.split("\t")
 
+            address = address.strip()
+            if not address.startswith('cosmos'):
+                address = address_convert(address, "cosmos")
+                print("errr", address)
+                continue
+
             # remove any white sopace or non numerical cahracters from dragon
             dragon = dragon.lower().replace(" ", "").replace("dgn", "").replace("ddgn", "").replace("d", "")
 
@@ -181,7 +187,6 @@ def main():
 
     # added on at the end
     manual = manual_additions()
-
 
     for d in get_cosmos_delegators():
         # do not repeat since we already get all staked shares

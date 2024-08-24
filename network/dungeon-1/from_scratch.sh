@@ -91,10 +91,10 @@ update_genesis '.app_state["wasm"]["params"]["code_upload_access"]["addresses"]=
 # TODO: what about PSS params? is this the wrong version? (i.e. soft_opt_out_threshold, provider.initial_val_set or do we keep that standard)
 update_genesis '.app_state["ccvconsumer"]["params"]["enabled"]=true'
 update_genesis '.app_state["ccvconsumer"]["params"]["blocks_per_distribution_transmission"]="3000"' # since 3x faster blocks
-# update_genesis '.app_state["ccvconsumer"]["params"]["consumer_redistribution_fraction"]="0.75"' # TODO: 0.10?
-# update_genesis '.app_state["ccvconsumer"]["params"]["provider_fee_pool_addr_str"]=""' # TODO: cosmoshub fee distr pool? or leave as is.
+update_genesis '.app_state["ccvconsumer"]["params"]["consumer_redistribution_fraction"]="0.10"'
+# update_genesis '.app_state["ccvconsumer"]["params"]["provider_fee_pool_addr_str"]=""'
 update_genesis '.app_state["ccvconsumer"]["params"]["reward_denoms"]=["udgn"]'
-update_genesis '.app_state["ccvconsumer"]["params"]["provider_reward_denoms"]=["uatom"]' # TODO: do we set this?
+update_genesis '.app_state["ccvconsumer"]["params"]["provider_reward_denoms"]=["uatom"]'
 
 ## === GENESIS ACCOUNTS ===
 
@@ -136,7 +136,8 @@ dungeond genesis add-genesis-account dungeon1dewdka0n9nnsutjlzkzayseg92kxx0wvc5j
 dungeond genesis add-genesis-account dungeon10z6mwcv78kmnj4lm74ce3zydrqwuh5qh3hgfxe 2500000000000udgn --vesting-amount 2500000000000udgn --vesting-end-time=1725027635 --append # Erik
 dungeond genesis add-genesis-account dungeon1lgu66ly24wz0x95hkhuzny754hfm9pku7gms23 2500000000000udgn --vesting-amount 2500000000000udgn --vesting-end-time=1725027635 --append # Paul
 
-# TODO: run the airdrop/genesis_builder.sh script here (airdrop)
+# Add all the airdrop accounts
+dungeond fast-add-genesis-account ./airdrop/FINAL_ALLOCATION.json --home=$HOME_DIR
 
 # iterate through the gentx directory, print the files
 # https://github.com/strangelove-ventures/bech32cli
@@ -152,6 +153,6 @@ dungeond genesis collect-gentxs --gentx-dir network/dungeon-1/gentx --home $HOME
 # The genesis is to large to distribute via github (102M) due to the airdrop.
 cp $HOME_DIR/config/genesis.json ./network/$CHAIN_ID/genesis.json
 tar -czvf ./network/$CHAIN_ID/genesis.json.tar.gz ./network/$CHAIN_ID/genesis.json
-rm ./network/$CHAIN_ID/genesis.json
+rm ./network/$CHAIN_ID/genesis.json # too large
 
 dungeond genesis validate
