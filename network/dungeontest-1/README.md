@@ -15,6 +15,9 @@ make local-image
 shasum -a 256 $(which dungeond)
 ```
 
+<!-- cp $(which dungeond) . && tar -czvf dungeond-0.1.0-amd64.tar.gz ./dungeond -->
+<!-- tar -xvzf dungeond-0.1.0-amd64.tar.gz -->
+
 
 <!--
 
