@@ -145,14 +145,14 @@ dungeond fast-add-genesis-account ./airdrop/FINAL_ALLOCATION.json --home=$HOME_D
 
 # iterate through the gentx directory, print the files
 # https://github.com/strangelove-ventures/bech32cli
-# for filename in network/dungeon-1/gentx/*.json; do
-#     echo "Processing $filename"
-#     addr=`cat $filename | jq -r .body.messages[0].validator_address | xargs -I {} bech32 transform {} dragon`
-#     raw_coin=`cat $filename | jq -r .body.messages[0].value` # { "denom": "udgn", "amount": "1000000" }
-#     coin=$(echo $raw_coin | jq -r '.amount + .denom') # make coin = 1000000udgn
-#     dungeond genesis add-genesis-account $addr $coin --append
-# done
-# dungeond genesis collect-gentxs --gentx-dir network/dungeon-1/gentx --home $HOME_DIR
+for filename in network/dungeon-1/gentx/*.json; do
+    echo "Processing $filename"
+    addr=`cat $filename | jq -r .body.messages[0].validator_address | xargs -I {} bech32 transform {} dragon`
+    raw_coin=`cat $filename | jq -r .body.messages[0].value` # { "denom": "udgn", "amount": "1000000" }
+    coin=$(echo $raw_coin | jq -r '.amount + .denom') # make coin = 1000000udgn
+    dungeond genesis add-genesis-account $addr $coin --append
+done
+dungeond genesis collect-gentxs --gentx-dir network/dungeon-1/gentx --home $HOME_DIR
 
 # The genesis is to large to distribute via github (102M) due to the airdrop.
 cp $HOME_DIR/config/genesis.json ./network/$CHAIN_ID/genesis.json
