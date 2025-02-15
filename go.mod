@@ -44,7 +44,6 @@ require (
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.0.3-0.20240808203856-57803750a140
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
 	github.com/cosmos/ibc-go/v8 v8.4.0
-	github.com/cosmos/interchain-security/v5 v5.0.0
 	github.com/prometheus/client_golang v1.20.1
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1

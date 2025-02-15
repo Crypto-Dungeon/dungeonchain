@@ -12,7 +12,7 @@ import (
 
 func main() {
 	rootCmd := NewRootCmd()
-	rootCmd.AddCommand(AddConsumerSectionCmd(app.DefaultNodeHome))
+	// rootCmd.AddCommand(AddConsumerSectionCmd(app.DefaultNodeHome))
 	rootCmd.AddCommand(AddFastGenesisAccountCmd(app.DefaultNodeHome, addresscodec.NewBech32Codec(app.Bech32PrefixAccAddr)))
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {

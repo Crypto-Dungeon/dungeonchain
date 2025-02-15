@@ -113,19 +113,6 @@ from_scratch () {
 
     # Run this to ensure everything worked and that the genesis file is setup correctly
     $BINARY genesis validate-genesis --home $HOME_DIR
-
-    # ICS provider genesis hack
-    HACK_DIR=icshack-1 && echo $HACK_DIR
-    rm -rf $HACK_DIR
-    cp -r ${HOME_DIR} $HACK_DIR
-
-    $BINARY add-consumer-section provider --home $HACK_DIR
-    ccvjson=`jq '.app_state["ccvconsumer"]' $HACK_DIR/config/genesis.json`
-    echo $ccvjson
-    jq '.app_state["ccvconsumer"] = '"$ccvjson"  ${HACK_DIR}/config/genesis.json > json.tmp && mv json.tmp $genesis_json
-    rm -rf $HACK_DIR
-
-    update_test_genesis `printf '.app_state["ccvconsumer"]["params"]["unbonding_period"]="%s"' "240s"`
 }
 
 # check if CLEAN is not set to false
