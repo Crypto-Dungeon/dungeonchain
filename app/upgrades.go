@@ -7,10 +7,11 @@ import (
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades/noop"
+	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v4"
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{}
+var Upgrades = []upgrades.Upgrade{v4.Upgrade}
 var Forks = []upgrades.Fork{}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
