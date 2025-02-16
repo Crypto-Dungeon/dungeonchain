@@ -618,7 +618,7 @@ func NewChainApp(
 	app.StakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
-			//app.SlashingKeeper.Hooks(),
+			app.SlashingKeeper.Hooks(),
 		),
 	)
 
