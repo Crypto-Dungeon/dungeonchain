@@ -2,6 +2,7 @@ package upgrades
 
 import (
 	"context"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
@@ -22,11 +23,13 @@ type AppKeepers struct {
 	AccountKeeper         *authkeeper.AccountKeeper
 	BankKeeper            *bankkeeper.BaseKeeper
 	ParamsKeeper          *paramskeeper.Keeper
+	UpgradeKeeper         *upgradekeeper.Keeper
 	ConsensusParamsKeeper *consensusparamkeeper.Keeper
 	Codec                 codec.Codec
 	GetStoreKey           func(storeKey string) *storetypes.KVStoreKey
 	CapabilityKeeper      *capabilitykeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper
+	CommitMultiStore      storetypes.CommitMultiStore
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)

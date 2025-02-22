@@ -14,14 +14,3 @@ var Upgrade = upgrades.Fork{
 	UpgradeHeight:  10,
 	BeginForkLogic: RunForkLogic,
 }
-
-//var Upgrade = upgrades.Upgrade{
-//	UpgradeName:          UpgradeName,
-//	CreateUpgradeHandler: CreateUpgradeHandler,
-//	StoreUpgrades: storetypes.StoreUpgrades{
-//		Added: []string{},
-//		Deleted: []string{
-//			"ccvconsumer",
-//		},
-//	},
-//}
