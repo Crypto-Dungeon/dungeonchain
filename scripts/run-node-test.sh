@@ -98,6 +98,8 @@ from_scratch () {
     # tokenfactory
     update_test_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"]=[]'
     update_test_genesis '.app_state["tokenfactory"]["params"]["denom_creation_gas_consume"]=100000'
+    # staking
+    update_test_genesis '.app_state["staking"]["params"]["bond_denom"]="'$DENOM'"'
 
     $BINARY keys list --keyring-backend $KEYRING --home $HOME_DIR
 
