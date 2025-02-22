@@ -13,3 +13,4 @@ data/
 heighliner/
 mytestnet/
 .idea
+*.DS_Store
