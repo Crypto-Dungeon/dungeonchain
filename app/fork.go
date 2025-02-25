@@ -9,8 +9,9 @@ import (
 func BeginBlockForks(ctx sdk.Context, app *ChainApp) {
 	keepers := upgrades.AppKeepers{
 		AccountKeeper:         &app.AccountKeeper,
-		BankKeeper:            &app.BankKeeper,
 		ParamsKeeper:          &app.ParamsKeeper,
+		UpgradeKeeper:         app.UpgradeKeeper,
+		CommitMultiStore:      app.CommitMultiStore(),
 		ConsensusParamsKeeper: &app.ConsensusParamsKeeper,
 		CapabilityKeeper:      app.CapabilityKeeper,
 		IBCKeeper:             app.IBCKeeper,
