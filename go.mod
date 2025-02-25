@@ -1,8 +1,6 @@
 module github.com/Crypto-Dungeon/dungeonchain
 
-go 1.22.11
-
-toolchain go1.23.6
+go 1.23.6
 
 // overrides
 replace (
