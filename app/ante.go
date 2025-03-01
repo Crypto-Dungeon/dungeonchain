@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/decorators"
 	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
@@ -20,10 +19,6 @@ import (
 
 	globalfeeante "github.com/strangelove-ventures/globalfee/x/globalfee/ante"
 	globalfeekeeper "github.com/strangelove-ventures/globalfee/x/globalfee/keeper"
-
-	ccvdemocracyante "github.com/cosmos/interchain-security/v5/app/consumer-democracy/ante"
-	ccvconsumerante "github.com/cosmos/interchain-security/v5/app/consumer/ante"
-	ccvconsumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -39,7 +34,7 @@ type HandlerOptions struct {
 
 	GlobalFeeKeeper      globalfeekeeper.Keeper
 	BypassMinFeeMsgTypes []string
-	ConsumerKeeper       ccvconsumerkeeper.Keeper
+	// ConsumerKeeper       ccvconsumerkeeper.Keeper
 }
 
 // NewAnteHandler constructor
@@ -65,9 +60,6 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
-		ccvconsumerante.NewMsgFilterDecorator(options.ConsumerKeeper),
-		ccvconsumerante.NewDisabledModulesDecorator("/cosmos.evidence", "/cosmos.slashing"),
-		ccvdemocracyante.NewForbiddenProposalsDecorator(IsLegacyProposalWhitelisted, IsModuleWhiteList),
 		wasmkeeper.NewLimitSimulationGasDecorator(options.WasmConfig.SimulationGasLimit), // after setup context to enforce limits early
 		wasmkeeper.NewCountTXDecorator(options.TXCounterStoreService),
 		wasmkeeper.NewGasRegisterDecorator(options.WasmKeeper.GetGasRegister()),
@@ -89,26 +81,4 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
-}
-
-var whiteListModule = map[string]struct{}{
-	"/cosmos.gov.v1.MsgUpdateParams":                       {},
-	"/cosmos.bank.v1beta1.MsgUpdateParams":                 {},
-	"/cosmos.staking.v1beta1.MsgUpdateParams":              {},
-	"/cosmos.distribution.v1beta1.MsgUpdateParams":         {},
-	"/cosmos.mint.v1beta1.MsgUpdateParams":                 {},
-	"/cosmos.gov.v1beta1.TextProposal":                     {},
-	"/ibc.applications.transfer.v1.MsgUpdateParams":        {},
-	"/interchain_security.ccv.consumer.v1.MsgUpdateParams": {},
-	"/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade":           {},
-	"/cosmos.upgrade.v1beta1.MsgCancelUpgrade":             {},
-}
-
-func IsModuleWhiteList(typeUrl string) bool {
-	_, found := whiteListModule[typeUrl]
-	return found
-}
-
-func IsLegacyProposalWhitelisted(content v1beta1.Content) bool {
-	return true
 }

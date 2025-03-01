@@ -44,13 +44,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	tmtypes "github.com/cometbft/cometbft/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvprovidertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 const chainID = "testing"
@@ -442,16 +435,10 @@ func GenesisStateWithValSet(
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = codec.MustMarshalJSON(bankGenesis)
 
-	consumerGenesisState := CreateMinimalConsumerTestGenesis(chainID)
-	tmVals, err := tmtypes.PB2TM.ValidatorUpdates(initValPowers)
-	if err != nil {
-		panic("failed to get vals")
-	}
-	consumerGenesisState.Provider.InitialValSet = initValPowers
-	consumerGenesisState.Provider.ConsensusState.NextValidatorsHash = tmtypes.NewValidatorSet(tmVals).Hash()
-	consumerGenesisState.Params.Enabled = true
-	genesisState[consumertypes.ModuleName] = codec.MustMarshalJSON(consumerGenesisState)
-
+	// tmVals, err := tmtypes.PB2TM.ValidatorUpdates(initValPowers)
+	// if err != nil {
+	// 	panic("failed to get vals")
+	// }
 	return genesisState, nil
 }
 
@@ -473,24 +460,24 @@ func GenAccount() account {
 // This function creates consumer module genesis state that is used as starting point for modifications
 // that allows the ICS chain to be started locally without having to start the provider chain and the relayer.
 // It is also used in tests that are starting the chain node.
-func CreateMinimalConsumerTestGenesis(chainID string) *ccvtypes.ConsumerGenesisState {
-	genesisState := ccvtypes.DefaultConsumerGenesisState()
-	genesisState.Params.Enabled = true
-	genesisState.NewChain = true
-	genesisState.Provider.ClientState = ccvprovidertypes.DefaultParams().TemplateClient
-	genesisState.Provider.ClientState.ChainId = chainID
-	genesisState.Provider.ClientState.LatestHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1}
-	trustPeriod, err := ccvtypes.CalculateTrustPeriod(genesisState.Params.UnbondingPeriod, ccvprovidertypes.DefaultTrustingPeriodFraction)
-	if err != nil {
-		panic("provider client trusting period error")
-	}
-	genesisState.Provider.ClientState.TrustingPeriod = trustPeriod
-	genesisState.Provider.ClientState.UnbondingPeriod = genesisState.Params.UnbondingPeriod
-	genesisState.Provider.ClientState.MaxClockDrift = ccvprovidertypes.DefaultMaxClockDrift
-	genesisState.Provider.ConsensusState = &ibctmtypes.ConsensusState{
-		Timestamp: time.Now().UTC(),
-		Root:      commitmenttypes.MerkleRoot{Hash: []byte("dummy")},
-	}
+// func CreateMinimalConsumerTestGenesis(chainID string) *ccvtypes.ConsumerGenesisState {
+// 	genesisState := ccvtypes.DefaultConsumerGenesisState()
+// 	genesisState.Params.Enabled = true
+// 	genesisState.NewChain = true
+// 	genesisState.Provider.ClientState = ccvprovidertypes.DefaultParams().TemplateClient
+// 	genesisState.Provider.ClientState.ChainId = chainID
+// 	genesisState.Provider.ClientState.LatestHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1}
+// 	trustPeriod, err := ccvtypes.CalculateTrustPeriod(genesisState.Params.UnbondingPeriod, ccvprovidertypes.DefaultTrustingPeriodFraction)
+// 	if err != nil {
+// 		panic("provider client trusting period error")
+// 	}
+// 	genesisState.Provider.ClientState.TrustingPeriod = trustPeriod
+// 	genesisState.Provider.ClientState.UnbondingPeriod = genesisState.Params.UnbondingPeriod
+// 	genesisState.Provider.ClientState.MaxClockDrift = ccvprovidertypes.DefaultMaxClockDrift
+// 	genesisState.Provider.ConsensusState = &ibctmtypes.ConsensusState{
+// 		Timestamp: time.Now().UTC(),
+// 		Root:      commitmenttypes.MerkleRoot{Hash: []byte("dummy")},
+// 	}
 
-	return genesisState
-}
+// 	return genesisState
+// }

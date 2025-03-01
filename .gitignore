@@ -9,3 +9,8 @@ airdrop/chains/*.lz4
 airdrop/snapshots/*.json
 __pycache__/
 data/
+
+heighliner/
+mytestnet/
+.idea
+*.DS_Store
