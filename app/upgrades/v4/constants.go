@@ -11,6 +11,6 @@ const (
 
 var Upgrade = upgrades.Fork{
 	UpgradeName:    UpgradeName,
-	UpgradeHeight:  10,
+	UpgradeHeight:  7193044,
 	BeginForkLogic: RunForkLogic,
 }
