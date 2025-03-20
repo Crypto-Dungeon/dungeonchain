@@ -57,7 +57,7 @@ make install
 ### **3️⃣ Initialize the Node**
 
 ```bash
-./dungeond init <node-name> --chain-id dungeon-1
+./dungeond init <node-name> --chain-id dungeon-reborn-test
 ```
 
 ### **4️⃣ Restore Your Validator Key**
