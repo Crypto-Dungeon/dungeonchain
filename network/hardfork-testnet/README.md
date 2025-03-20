@@ -111,7 +111,8 @@ Run the following commands to update it:
 ```bash
 cd ~/.dungeonchain/config
 rm -f genesis.json
-wget <new-genesis-url>
+wget https://github.com/evgen3000/dungeonchain/raw/refs/heads/main/network/hardfork-testnet/genesis.json.zip
+unzip genesis.json.zip
 ```
 
 ---
