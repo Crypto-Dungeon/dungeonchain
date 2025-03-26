@@ -15,7 +15,7 @@ This instruction describes the **mainnet hardfork** of the `dungeon-1` network a
 
 This step should be executed by all validators **before 27 March 16:00 UTC**.
 
-To stop the current chain at the designated block height, set the following parameter in your `config.toml`:
+To stop the current chain at the designated block height, set the following parameter in your `app.toml`:
 
 ```toml
 halt-height = 7824000
