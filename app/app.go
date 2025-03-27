@@ -145,10 +145,6 @@ import (
 	tokenfactorykeeper "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/types"
 
-	globalfee "github.com/strangelove-ventures/globalfee/x/globalfee"
-	globalfeekeeper "github.com/strangelove-ventures/globalfee/x/globalfee/keeper"
-	globalfeetypes "github.com/strangelove-ventures/globalfee/x/globalfee/types"
-
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
@@ -270,7 +266,6 @@ type ChainApp struct {
 	// Custom
 	WasmKeeper          wasmkeeper.Keeper
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
-	GlobalFeeKeeper     globalfeekeeper.Keeper
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -392,7 +387,6 @@ func NewChainApp(
 		icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		tokenfactorytypes.StoreKey,
-		globalfeetypes.StoreKey,
 		packetforwardtypes.StoreKey,
 		// ccvconsumertypes.StoreKey,
 	)
@@ -681,13 +675,6 @@ func NewChainApp(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
-	// Create the globalfee keeper
-	app.GlobalFeeKeeper = globalfeekeeper.NewKeeper(
-		appCodec,
-		app.keys[globalfeetypes.StoreKey],
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
 	// Create the tokenfactory keeper
 	app.TokenFactoryKeeper = tokenfactorykeeper.NewKeeper(
 		appCodec,
@@ -892,7 +879,6 @@ func NewChainApp(
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		// custom
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(tokenfactorytypes.ModuleName)),
-		globalfee.NewAppModule(appCodec, app.GlobalFeeKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		// consumerModule,
 	)
@@ -994,7 +980,6 @@ func NewChainApp(
 		ibcfeetypes.ModuleName,
 		wasmtypes.ModuleName, // wasm after ibc transfer
 		tokenfactorytypes.ModuleName,
-		globalfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		// ccvconsumertypes.ModuleName,
 	}
@@ -1063,7 +1048,6 @@ func NewChainApp(
 			TXCounterStoreService: runtime.NewKVStoreService(keys[wasmtypes.StoreKey]),
 			CircuitKeeper:         &app.CircuitKeeper,
 
-			GlobalFeeKeeper:      app.GlobalFeeKeeper,
 			BypassMinFeeMsgTypes: GetDefaultBypassFeeMessages(),
 			// ConsumerKeeper:       app.ConsumerKeeper,
 		},
@@ -1418,7 +1402,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(tokenfactorytypes.ModuleName)
-	paramsKeeper.Subspace(globalfee.ModuleName)
 	// paramsKeeper.Subspace(ccvconsumertypes.ModuleName)
 
 	return paramsKeeper
