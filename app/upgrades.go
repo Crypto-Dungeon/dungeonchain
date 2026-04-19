@@ -4,6 +4,7 @@ import (
 	"fmt"
 	v4 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v4"
 	v5 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v5"
+	v6 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v6"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -12,7 +13,7 @@ import (
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v5.Upgrade}
+var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade}
 var Forks = []upgrades.Fork{v4.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
@@ -32,6 +33,7 @@ func (app *ChainApp) RegisterUpgradeHandlers() {
 		IBCKeeper:             app.IBCKeeper,
 		Codec:                 app.appCodec,
 		GetStoreKey:           app.GetKey,
+		GlobalFeeKeeper:       &app.GlobalFeeKeeper,
 	}
 	app.GetStoreKeys()
 	// register all upgrade handlers

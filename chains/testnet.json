@@ -65,7 +65,7 @@
             "denom": "udgn",
             "trusting_period": "336h",
             "debugging": false,
-            "block_time": "2000ms",
+            "block_time": "1500ms",
             "host_port_override": {
                 "1317": "1317",
                 "26656": "26656",
@@ -140,7 +140,7 @@
             "denom": "uatom",
             "trusting_period": "336h",
             "debugging": true,
-            "block_time": "2000ms",
+            "block_time": "1500ms",
             "ics_version_override": {}
         }
     ]

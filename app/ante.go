@@ -34,7 +34,9 @@ type HandlerOptions struct {
 
 	GlobalFeeKeeper      globalfeekeeper.Keeper
 	BypassMinFeeMsgTypes []string
-	// ConsumerKeeper       ccvconsumerkeeper.Keeper
+	// ExemptAddresses is the list of bech32 addresses that pay zero fees.
+	// Populated from the v6 upgrade params; defaults to empty at genesis.
+	ExemptAddresses []string
 }
 
 // NewAnteHandler constructor
@@ -58,9 +60,27 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		return nil, errors.New("circuit keeper is required for ante builder")
 	}
 
+	// postFeeDecorators is everything that runs AFTER fee checking.
+	// We need this as a standalone handler so that the exemption decorator
+	// can jump directly to it, skipping globalfeeante.FeeDecorator.
+	postFeeDecorators := []sdk.AnteDecorator{
+		ante.NewSetPubKeyDecorator(options.AccountKeeper),
+		ante.NewValidateSigCountDecorator(options.AccountKeeper),
+		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
+		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
+		decorators.NewMsgStakingVestingDeny(options.AccountKeeper),
+		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
+	}
+	postFeeHandler := sdk.ChainAnteDecorators(postFeeDecorators...)
+
+	// Full ante chain. FeeExemptionAnteDecorator sits immediately before
+	// globalfeeante.FeeDecorator. Exempt signers jump to postFeeHandler;
+	// everyone else falls through to FeeDecorator then postFeeDecorators
+	// (which are also appended below so non-exempt paths remain correct).
 	anteDecorators := []sdk.AnteDecorator{
-		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
-		wasmkeeper.NewLimitSimulationGasDecorator(options.WasmConfig.SimulationGasLimit), // after setup context to enforce limits early
+		ante.NewSetUpContextDecorator(),
+		wasmkeeper.NewLimitSimulationGasDecorator(options.WasmConfig.SimulationGasLimit),
 		wasmkeeper.NewCountTXDecorator(options.TXCounterStoreService),
 		wasmkeeper.NewGasRegisterDecorator(options.WasmKeeper.GetGasRegister()),
 		circuitante.NewCircuitBreakerDecorator(options.CircuitKeeper),
@@ -69,9 +89,11 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
+		// Fee exemption MUST come before globalfee FeeDecorator.
+		decorators.NewFeeExemptionAnteDecorator(options.ExemptAddresses, postFeeHandler),
 		globalfeeante.NewFeeDecorator(options.BypassMinFeeMsgTypes, options.GlobalFeeKeeper, 2_000_000),
-		//ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
-		ante.NewSetPubKeyDecorator(options.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
+		// Post-fee decorators run for non-exempt paths (exempt paths use postFeeHandler above).
+		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
