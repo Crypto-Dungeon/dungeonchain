@@ -1050,6 +1050,10 @@ func NewChainApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	// v6: initialize fee-exempt addresses BEFORE building the ante handler.
+	// These must be set before NewAnteHandler is called or ExemptAddresses will be nil.
+	app.FeeExemptAddresses = []string{"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc"}
+
 
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
@@ -1137,9 +1141,6 @@ func NewChainApp(
 		}
 
 	}
-
-	// v6: fee-exempt admin address wired at startup (ante chain bypass).
-	app.FeeExemptAddresses = []string{"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc"}
 
 	return app
 }

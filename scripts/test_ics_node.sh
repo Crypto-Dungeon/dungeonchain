@@ -102,6 +102,10 @@ from_scratch () {
     $BINARY genesis add-genesis-account $KEY 10000000$DENOM,900test --keyring-backend $KEYRING --home $HOME_DIR --append
     $BINARY genesis add-genesis-account $KEY2 10000000$DENOM,800test --keyring-backend $KEYRING --home $HOME_DIR --append
 
+    # Create validator gentx and collect
+    $BINARY genesis gentx $KEY 5000000$DENOM --chain-id $CHAIN_ID --keyring-backend $KEYRING --home $HOME_DIR
+    $BINARY genesis collect-gentxs --home $HOME_DIR
+
 }
 
 # check if CLEAN is not set to false
