@@ -272,6 +272,9 @@ type ChainApp struct {
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
 	GlobalFeeKeeper     globalfeekeeper.Keeper
 	PacketForwardKeeper *packetforwardkeeper.Keeper
+	// FeeExemptAddresses: bech32 addresses exempt from globalfee minimum gas price checks.
+	// Wired at startup; initially empty (all addresses pay fees). Populated by v6 upgrade.
+	FeeExemptAddresses []string
 
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
@@ -1047,6 +1050,13 @@ func NewChainApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
+	// v6: initialize fee-exempt addresses BEFORE building the ante handler.
+	// These must be set before NewAnteHandler is called or ExemptAddresses will be nil.
+	app.FeeExemptAddresses = []string{
+		"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc", // admin / treasury
+		"dungeon1dflpa6dnpkn5ft4tyzkpwdhvz6l7wng06qn665", // btc-relayer (Phase A 2026-05-09)
+	}
+
 
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
@@ -1065,6 +1075,7 @@ func NewChainApp(
 
 			GlobalFeeKeeper:      app.GlobalFeeKeeper,
 			BypassMinFeeMsgTypes: GetDefaultBypassFeeMessages(),
+			ExemptAddresses:      app.FeeExemptAddresses,
 			// ConsumerKeeper:       app.ConsumerKeeper,
 		},
 	)

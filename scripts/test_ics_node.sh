@@ -102,18 +102,10 @@ from_scratch () {
     $BINARY genesis add-genesis-account $KEY 10000000$DENOM,900test --keyring-backend $KEYRING --home $HOME_DIR --append
     $BINARY genesis add-genesis-account $KEY2 10000000$DENOM,800test --keyring-backend $KEYRING --home $HOME_DIR --append
 
-    # ICS provider genesis hack
-    HACK_DIR=icshack-1 && echo $HACK_DIR
-    rm -rf $HACK_DIR
-    cp -r ${HOME_DIR} $HACK_DIR
+    # Create validator gentx and collect
+    $BINARY genesis gentx $KEY 5000000$DENOM --chain-id $CHAIN_ID --keyring-backend $KEYRING --home $HOME_DIR
+    $BINARY genesis collect-gentxs --home $HOME_DIR
 
-    $BINARY add-consumer-section provider --home $HACK_DIR
-    ccvjson=`jq '.app_state["ccvconsumer"]' $HACK_DIR/config/genesis.json`
-    echo $ccvjson
-    jq '.app_state["ccvconsumer"] = '"$ccvjson"  ${HACK_DIR}/config/genesis.json > json.tmp && mv json.tmp $genesis_json
-    rm -rf $HACK_DIR
-
-    update_test_genesis `printf '.app_state["ccvconsumer"]["params"]["unbonding_period"]="%s"' "240s"`
 }
 
 # check if CLEAN is not set to false
@@ -144,5 +136,6 @@ sed -i -e 's/address = ":8080"/address = "0.0.0.0:'$ROSETTA'"/g' $HOME_DIR/confi
 # Faster blocks
 sed -i -e 's/timeout_commit = "5s"/timeout_commit = "'$BLOCK_TIME'"/g' $HOME_DIR/config/config.toml
 
+sed -i -e 's/timeout_propose = "3s"/timeout_propose = "2s"/g' $HOME_DIR/config/config.toml
 # Start the daemon in the background
 $BINARY start --pruning=nothing  --minimum-gas-prices=0$DENOM --rpc.laddr="tcp://0.0.0.0:$RPC" --home $HOME_DIR

@@ -300,7 +300,7 @@ testnet: setup-testnet
 	spawn local-ic start testnet
 
 sh-testnet: mod-tidy
-	CHAIN_ID="localchain-1" BLOCK_TIME="1000ms" CLEAN=true sh scripts/test_ics_node.sh
+	CHAIN_ID="localchain-1" BLOCK_TIME="1500ms" CLEAN=true sh scripts/test_ics_node.sh
 
 .PHONY: setup-testnet set-testnet-configs testnet testnet-basic sh-testnet
 

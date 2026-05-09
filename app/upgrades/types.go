@@ -17,6 +17,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	globalfeekeeper "github.com/strangelove-ventures/globalfee/x/globalfee/keeper"
 )
 
 type AppKeepers struct {
@@ -30,6 +31,9 @@ type AppKeepers struct {
 	CapabilityKeeper      *capabilitykeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper
 	CommitMultiStore      storetypes.CommitMultiStore
+
+	// GlobalFeeKeeper allows upgrade handlers to set globalfee params.
+	GlobalFeeKeeper *globalfeekeeper.Keeper
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)
@@ -51,6 +55,10 @@ type Upgrade struct {
 
 // Fork defines a struct containing the requisite fields for a non-software upgrade proposal
 // Hard Fork at a given height to implement.
+// There is one time code that can be added for the start of the Fork, in `BeginForkLogic`.
+// Any other change in the code should be height-gated, if the goal is to have old and new binaries
+// to be compatible prior to the upgrade handler.
+//
 // There is one time code that can be added for the start of the Fork, in `BeginForkLogic`.
 // Any other change in the code should be height-gated, if the goal is to have old and new binaries
 // to be compatible prior to the upgrade height.
