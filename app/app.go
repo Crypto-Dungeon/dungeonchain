@@ -1052,7 +1052,10 @@ func NewChainApp(
 	app.SetEndBlocker(app.EndBlocker)
 	// v6: initialize fee-exempt addresses BEFORE building the ante handler.
 	// These must be set before NewAnteHandler is called or ExemptAddresses will be nil.
-	app.FeeExemptAddresses = []string{"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc"}
+	app.FeeExemptAddresses = []string{
+		"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc", // admin / treasury
+		"dungeon1dflpa6dnpkn5ft4tyzkpwdhvz6l7wng06qn665", // btc-relayer (Phase A 2026-05-09)
+	}
 
 
 	anteHandler, err := NewAnteHandler(
