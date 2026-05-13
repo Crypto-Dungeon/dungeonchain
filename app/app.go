@@ -876,7 +876,7 @@ func NewChainApp(
 		transfer.NewAppModule(app.TransferKeeper),
 		// ibcfee removed in v10
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
-		ibctm.NewAppModule(ibctm.NewLightClientModule(appCodec, ibcclienttypes.StoreProvider{})),
+		ibctm.NewAppModule(ibctm.NewLightClientModule(appCodec, app.IBCKeeper.ClientKeeper.GetStoreProvider())),
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		// custom
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(tokenfactorytypes.ModuleName)),
