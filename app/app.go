@@ -37,6 +37,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	solomachine "github.com/cosmos/ibc-go/v10/modules/light-clients/06-solomachine"
 	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
@@ -825,6 +826,20 @@ func NewChainApp(
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	// ibc-go v10 requires light-client modules to be explicitly registered with the
+	// 02-client router. Without this, ClientKeeper.GetClientStatus() returns Unauthorized
+	// for every client (route not found) and ALL IBC packet sends fail. This registration
+	// was omitted in the v7.0.0 upgrade, taking the entire chain's IBC offline.
+	// Pattern mirrors ibc-go v10.0.0 testing/simapp/app.go.
+	clientKeeper := app.IBCKeeper.ClientKeeper
+	storeProvider := app.IBCKeeper.ClientKeeper.GetStoreProvider()
+
+	tmLightClientModule := ibctm.NewLightClientModule(appCodec, storeProvider)
+	clientKeeper.AddRoute(ibctm.ModuleName, &tmLightClientModule)
+
+	smLightClientModule := solomachine.NewLightClientModule(appCodec, storeProvider)
+	clientKeeper.AddRoute(solomachine.ModuleName, &smLightClientModule)
+
 	// --- Module Options ---
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
@@ -876,7 +891,7 @@ func NewChainApp(
 		transfer.NewAppModule(app.TransferKeeper),
 		// ibcfee removed in v10
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
-		ibctm.NewAppModule(ibctm.NewLightClientModule(appCodec, ibcclienttypes.StoreProvider{})),
+		ibctm.NewAppModule(tmLightClientModule),
 		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		// custom
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(tokenfactorytypes.ModuleName)),
