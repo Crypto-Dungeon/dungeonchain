@@ -25,9 +25,9 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/types"
-//	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee" // v10 dropped fee module
-//	ibcfeekeeper "github.com/cosmos/ibc-go/v10/modules/apps/29-fee/keeper"
-//	ibcfeetypes "github.com/cosmos/ibc-go/v10/modules/apps/29-fee/types"
+	//	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee" // v10 dropped fee module
+	//	ibcfeekeeper "github.com/cosmos/ibc-go/v10/modules/apps/29-fee/keeper"
+	//	ibcfeetypes "github.com/cosmos/ibc-go/v10/modules/apps/29-fee/types"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
@@ -141,6 +141,13 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	hyperlane "github.com/bcp-innovations/hyperlane-cosmos/x/core"
+	hyperlanekeeper "github.com/bcp-innovations/hyperlane-cosmos/x/core/keeper"
+	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
+	warp "github.com/bcp-innovations/hyperlane-cosmos/x/warp"
+	warpkeeper "github.com/bcp-innovations/hyperlane-cosmos/x/warp/keeper"
+	warptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
+
 	tokenfactory "github.com/strangelove-ventures/tokenfactory/x/tokenfactory"
 	tokenfactorybindings "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/bindings"
 	tokenfactorykeeper "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/keeper"
@@ -214,11 +221,13 @@ var maccPerms = map[string][]string{
 	govtypes.ModuleName:            {authtypes.Burner},
 	nft.ModuleName:                 nil,
 	// non sdk modules
-	ibctransfertypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
-// 	ibcfeetypes.ModuleName:       nil, // v10: dropped
+	ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+	// 	ibcfeetypes.ModuleName:       nil, // v10: dropped
 	icatypes.ModuleName:          nil,
 	wasmtypes.ModuleName:         {authtypes.Burner},
 	tokenfactorytypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+	hyperlanetypes.ModuleName:    nil,
+	warptypes.ModuleName:         nil,
 	// ccvconsumertypes.ConsumerRedistributeName:     nil,
 	// ccvconsumertypes.ConsumerToSendToProviderName: nil,
 }
@@ -261,8 +270,8 @@ type ChainApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	CircuitKeeper         circuitkeeper.Keeper
 
-	IBCKeeper           *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-// 	IBCFeeKeeper        ibcfeekeeper.Keeper // v10: dropped
+	IBCKeeper *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	// 	IBCFeeKeeper        ibcfeekeeper.Keeper // v10: dropped
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
@@ -273,6 +282,8 @@ type ChainApp struct {
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
 	GlobalFeeKeeper     globalfeekeeper.Keeper
 	PacketForwardKeeper *packetforwardkeeper.Keeper
+	HyperlaneKeeper     *hyperlanekeeper.Keeper
+	WarpKeeper          warpkeeper.Keeper
 	// FeeExemptAddresses: bech32 addresses exempt from globalfee minimum gas price checks.
 	// Wired at startup; initially empty (all addresses pay fees). Populated by v6 upgrade.
 	FeeExemptAddresses []string
@@ -281,9 +292,9 @@ type ChainApp struct {
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
-// 	ScopedIBCFeeKeeper        capabilitykeeper.ScopedKeeper // v10: dropped
-	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
-	ScopedIBCConsumerKeeper   capabilitykeeper.ScopedKeeper
+	// 	ScopedIBCFeeKeeper        capabilitykeeper.ScopedKeeper // v10: dropped
+	ScopedWasmKeeper        capabilitykeeper.ScopedKeeper
+	ScopedIBCConsumerKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	ModuleManager      *module.Manager
@@ -391,13 +402,15 @@ func NewChainApp(
 		capabilitytypes.StoreKey,
 		ibcexported.StoreKey,
 		ibctransfertypes.StoreKey,
-// 		ibcfeetypes.StoreKey, // v10: dropped
+		// 		ibcfeetypes.StoreKey, // v10: dropped
 		wasmtypes.StoreKey,
 		icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		tokenfactorytypes.StoreKey,
 		globalfeetypes.StoreKey,
 		packetforwardtypes.StoreKey,
+		hyperlanetypes.ModuleName,
+		warptypes.ModuleName,
 		// ccvconsumertypes.StoreKey,
 	)
 
@@ -738,6 +751,24 @@ func NewChainApp(
 	)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
+	hyperlaneKeeper := hyperlanekeeper.NewKeeper(
+		appCodec,
+		app.AccountKeeper.AddressCodec(),
+		runtime.NewKVStoreService(keys[hyperlanetypes.ModuleName]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.BankKeeper,
+	)
+	app.HyperlaneKeeper = &hyperlaneKeeper
+	app.WarpKeeper = warpkeeper.NewKeeper(
+		appCodec,
+		app.AccountKeeper.AddressCodec(),
+		runtime.NewKVStoreService(keys[warptypes.ModuleName]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.BankKeeper,
+		app.HyperlaneKeeper,
+		[]int32{int32(warptypes.HYP_TOKEN_TYPE_COLLATERAL)},
+	)
+
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[icahosttypes.StoreKey]),
@@ -791,7 +822,7 @@ func NewChainApp(
 	// Create Transfer Stack
 	var transferStack porttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-// 	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper) // v10: dropped
+	// 	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper) // v10: dropped
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
@@ -806,13 +837,13 @@ func NewChainApp(
 	// integration point for custom authentication modules
 	// see https://medium.com/the-interchain-foundation/ibc-go-v6-changes-to-interchain-accounts-and-how-it-impacts-your-chain-806c185300d7
 	icaControllerStack = icacontroller.NewIBCMiddleware(app.ICAControllerKeeper)
-// 	icaControllerStack = ibcfee.NewIBCMiddleware(icaControllerStack, app.IBCFeeKeeper) // v10: dropped
+	// 	icaControllerStack = ibcfee.NewIBCMiddleware(icaControllerStack, app.IBCFeeKeeper) // v10: dropped
 
 	// RecvPacket, message that originates from core IBC and goes down to app, the flow is:
 	// channel.RecvPacket -> fee.OnRecvPacket -> icaHost.OnRecvPacket
 	var icaHostStack porttypes.IBCModule
 	icaHostStack = icahost.NewIBCModule(app.ICAHostKeeper)
-// 	icaHostStack = ibcfee.NewIBCMiddleware(icaHostStack, app.IBCFeeKeeper) // v10: dropped
+	// 	icaHostStack = ibcfee.NewIBCMiddleware(icaHostStack, app.IBCFeeKeeper) // v10: dropped
 
 	var wasmStack porttypes.IBCModule // Create fee enabled wasm ibc Stack
 	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)
@@ -897,6 +928,8 @@ func NewChainApp(
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(tokenfactorytypes.ModuleName)),
 		globalfee.NewAppModule(appCodec, app.GlobalFeeKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
+		hyperlane.NewAppModule(appCodec, app.HyperlaneKeeper),
+		warp.NewAppModule(appCodec, app.WarpKeeper),
 		// consumerModule,
 	)
 
@@ -1000,6 +1033,8 @@ func NewChainApp(
 		tokenfactorytypes.ModuleName,
 		globalfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
+		hyperlanetypes.ModuleName,
+		warptypes.ModuleName,
 		// ccvconsumertypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
@@ -1057,7 +1092,6 @@ func NewChainApp(
 		"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc", // admin / treasury
 		"dungeon1dflpa6dnpkn5ft4tyzkpwdhvz6l7wng06qn665", // btc-relayer (Phase A 2026-05-09)
 	}
-
 
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
