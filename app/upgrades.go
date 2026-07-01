@@ -6,6 +6,7 @@ import (
 	v5 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v5"
 	v6 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v6"
 	v7 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v7"
+	v8 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v8"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -14,7 +15,7 @@ import (
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade}
+var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade, v8.Upgrade}
 var Forks = []upgrades.Fork{v4.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
@@ -35,6 +36,8 @@ func (app *ChainApp) RegisterUpgradeHandlers() {
 		Codec:                 app.appCodec,
 		GetStoreKey:           app.GetKey,
 		GlobalFeeKeeper:       &app.GlobalFeeKeeper,
+		HyperlaneKeeper:       app.HyperlaneKeeper,
+		WarpKeeper:            &app.WarpKeeper,
 	}
 	app.GetStoreKeys()
 	// register all upgrade handlers
