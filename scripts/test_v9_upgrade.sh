@@ -13,7 +13,10 @@
 #      economic core additionally sign+broadcasts with code=0.
 #
 # Ports chosen to NOT collide with the live dungeond on server 11
-# (26657/26656/9090/11317) or the v6 test script (46657 etc).
+# (26657/26656/9090/11317) AND to sit BELOW the ephemeral port range
+# (32768-60999): outbound connections on a busy box transiently occupy
+# in-range ports, randomly breaking the daemon's listener bind. (The v6
+# script's 46xxx ports have this latent bug.)
 set -eu
 
 BINARY_V8=${BINARY_V8:-$HOME/bin/dungeond-v8}
@@ -23,12 +26,12 @@ CHAIN_ID=${CHAIN_ID:-dungeontest-1}
 DENOM=${DENOM:-udgn}
 KEYRING=test
 
-RPC_PORT=${RPC_PORT:-47657}
-P2P_PORT=${P2P_PORT:-47656}
-GRPC_PORT=${GRPC_PORT:-19190}
-GRPC_WEB_PORT=${GRPC_WEB_PORT:-19191}
-REST_PORT=${REST_PORT:-22317}
-PPROF_PORT=${PPROF_PORT:-36061}
+RPC_PORT=${RPC_PORT:-28657}
+P2P_PORT=${P2P_PORT:-28656}
+GRPC_PORT=${GRPC_PORT:-28090}
+GRPC_WEB_PORT=${GRPC_WEB_PORT:-28091}
+REST_PORT=${REST_PORT:-28317}
+PPROF_PORT=${PPROF_PORT:-28060}
 
 LOG_DIR=$HOME_DIR/test-logs
 UPGRADE_OFFSET=${UPGRADE_OFFSET:-40}
