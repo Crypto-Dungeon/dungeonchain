@@ -258,11 +258,14 @@ q globalfee       globalfee minimum-gas-prices
 q ratelimit       ratelimit list-rate-limits
 q hyperlane       hyperlane mailboxes
 q warp            warp tokens
-# PFM registers no CLI query in v10 — exercise its query surface via REST.
-if curl -sf http://127.0.0.1:$REST_PORT/packetforward/v1/params > $LOG_DIR/q_pfm.json 2>&1; then
-  say "  OK   query pfm (REST)"
+# PFM registers no CLI query or REST gateway in v10 — hit its gRPC query
+# handler through the node's ABCI query router instead.
+PFM_RES=$(curl -s "http://127.0.0.1:$RPC_PORT/abci_query?path=%22/packetforward.v1.Query/Params%22" 2>&1)
+echo "$PFM_RES" > $LOG_DIR/q_pfm.json
+if [ "$(echo "$PFM_RES" | jq -r '.result.response.code')" = "0" ]; then
+  say "  OK   query pfm (abci_query)"
 else
-  say "  FAIL query pfm (REST)"; QFAIL=$((QFAIL+1))
+  say "  FAIL query pfm (abci_query)"; QFAIL=$((QFAIL+1))
 fi
 [ $QFAIL -eq 0 ] || die "$QFAIL module queries failed (see $LOG_DIR/q_*.json)"
 
