@@ -47,9 +47,13 @@ done
 command -v jq >/dev/null || die "jq is required"
 
 say "--- killing any leftover testnet daemons ---"
-pkill -f 'dungeond-v[89] .*--home.*v9test' 2>/dev/null || true
-fuser -k $RPC_PORT/tcp 2>/dev/null || true
-sleep 2
+# Match by home dir: catches both the plain-named v8 binary and dungeond-v9.
+pkill -f -- "--home $HOME_DIR" 2>/dev/null || true
+fuser -k $RPC_PORT/tcp $P2P_PORT/tcp 2>/dev/null || true
+for i in $(seq 1 15); do
+  ss -tln 2>/dev/null | grep -qE ":($RPC_PORT|$P2P_PORT)\b" || break
+  sleep 1
+done
 
 say "--- wiping $HOME_DIR ---"
 [ ${#HOME_DIR} -gt 5 ] || die "HOME_DIR too short, refusing to rm"
