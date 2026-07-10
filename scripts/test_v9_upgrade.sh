@@ -294,7 +294,7 @@ g feegrant_grant   feegrant grant $USER_ADDR $VAL_ADDR --spend-limit 1000$DENOM
 g authz_grant      authz grant $VAL_ADDR send --spend-limit 1000$DENOM
 g ibc_transfer     ibc-transfer transfer transfer channel-0 $VAL_ADDR 1$DENOM
 g tf_create        tokenfactory create-denom btest
-g vesting          vesting create-vesting-account $VALOPER2 100$DENOM $(( $(date +%s) + 3600 ))
+g vesting          vesting create-vesting-account $VAL_ADDR 100$DENOM $(( $(date +%s) + 3600 ))
 printf '\x00asm\x01\x00\x00\x00' > $LOG_DIR/dummy.wasm
 g wasm_store       wasm store $LOG_DIR/dummy.wasm
 [ $GFAIL -eq 0 ] || die "$GFAIL module tx builds failed (see $LOG_DIR/g_*.json) — Passage-class breakage"
