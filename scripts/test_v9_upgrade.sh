@@ -305,7 +305,9 @@ b() { # b <label> <from> <args...>
   local out code
   out=$("${BIN9[@]}" tx "$@" --from $from "${TX9[@]}" $FEES 2>&1) || true
   echo "$out" > $LOG_DIR/b_$label.json
-  code=$(echo "$out" | jq -r '.code // "parse-error"' 2>/dev/null)
+  # --gas auto prints "gas estimate: N" before the JSON; parse the JSON line
+  # only, and never let a jq failure kill the script under set -e.
+  code=$(echo "$out" | grep -m1 '^{' | jq -r '.code // "parse-error"' 2>/dev/null || echo parse-error)
   [ "$code" = "0" ] || die "broadcast $label failed (code=$code, see $LOG_DIR/b_$label.json)"
   say "  OK   broadcast $label"
   sleep 3
