@@ -258,15 +258,11 @@ q globalfee       globalfee minimum-gas-prices
 q ratelimit       ratelimit list-rate-limits
 q hyperlane       hyperlane mailboxes
 q warp            warp tokens
-# PFM registers no CLI query or REST gateway in v10 — hit its gRPC query
-# handler through the node's ABCI query router instead.
-PFM_RES=$(curl -s "http://127.0.0.1:$RPC_PORT/abci_query?path=%22/packetforward.v1.Query/Params%22" 2>&1)
-echo "$PFM_RES" > $LOG_DIR/q_pfm.json
-if [ "$(echo "$PFM_RES" | jq -r '.result.response.code')" = "0" ]; then
-  say "  OK   query pfm (abci_query)"
-else
-  say "  FAIL query pfm (abci_query)"; QFAIL=$((QFAIL+1))
-fi
+# PFM v10 has NO query service (no query.pb.go, params removed — stateless
+# middleware). Its only functional surface is memo-based packet forwarding,
+# which needs a second chain — exercised at the IBC-testnet stage, not here.
+# Wiring is proven by the chain starting (module+genesis registered).
+say "  SKIP query pfm (v10 has no query surface by design)"
 [ $QFAIL -eq 0 ] || die "$QFAIL module queries failed (see $LOG_DIR/q_*.json)"
 
 say "--- MSG BATTERY (generate-only): every module's tx builds ---"
