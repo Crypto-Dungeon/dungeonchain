@@ -161,6 +161,9 @@ import (
 	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
+	"github.com/cosmos/ibc-apps/modules/rate-limiting/v10/ratelimit"
+	ratelimitkeeper "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/ratelimit/keeper"
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/ratelimit/types"
 	// consumerdemocracy "github.com/cosmos/interchain-security/v5/app/consumer-democracy"
 	// ccvconsumer "github.com/cosmos/interchain-security/v5/x/ccv/consumer"
 	// ccvconsumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
@@ -282,6 +285,7 @@ type ChainApp struct {
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
 	GlobalFeeKeeper     globalfeekeeper.Keeper
 	PacketForwardKeeper *packetforwardkeeper.Keeper
+	RatelimitKeeper     ratelimitkeeper.Keeper
 	HyperlaneKeeper     *hyperlanekeeper.Keeper
 	WarpKeeper          warpkeeper.Keeper
 	// FeeExemptAddresses: bech32 addresses exempt from globalfee minimum gas price checks.
@@ -409,6 +413,7 @@ func NewChainApp(
 		tokenfactorytypes.StoreKey,
 		globalfeetypes.StoreKey,
 		packetforwardtypes.StoreKey,
+		ratelimittypes.StoreKey,
 		hyperlanetypes.ModuleName,
 		warptypes.ModuleName,
 		// ccvconsumertypes.StoreKey,
@@ -726,12 +731,25 @@ func NewChainApp(
 	// directly as ICS4Wrapper everywhere it was previously the fee keeper.
 	// var _ = ibcfeekeeper.NewKeeper  // dead reference, kept for grep history
 
+	// Create the rate-limiting keeper BEFORE transfer/PFM: it is their ICS4Wrapper,
+	// so every outbound transfer (direct or forwarded) passes through the limiter.
+	app.RatelimitKeeper = *ratelimitkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[ratelimittypes.StoreKey]),
+		app.GetSubspace(ratelimittypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.BankKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ClientKeeper,
+		app.IBCKeeper.ChannelKeeper, // ICS4Wrapper
+	)
+
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
 		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, // ics4Wrapper (was IBCFeeKeeper pre-v10)
+		app.RatelimitKeeper, // ics4Wrapper: rate-limit outbound transfers
 		app.IBCKeeper.ChannelKeeper,
 		app.MsgServiceRouter(),
 		app.AccountKeeper,
@@ -746,7 +764,7 @@ func NewChainApp(
 		app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
 		app.IBCKeeper.ChannelKeeper,
 		app.BankKeeper,
-		app.IBCKeeper.ChannelKeeper,
+		app.RatelimitKeeper, // ics4Wrapper: forwarded packets are rate-limited too
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -823,6 +841,7 @@ func NewChainApp(
 	var transferStack porttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	// 	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper) // v10: dropped
+	transferStack = ratelimit.NewIBCMiddleware(app.RatelimitKeeper, transferStack)
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
@@ -928,6 +947,7 @@ func NewChainApp(
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(tokenfactorytypes.ModuleName)),
 		globalfee.NewAppModule(appCodec, app.GlobalFeeKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
+		ratelimit.NewAppModule(appCodec, app.RatelimitKeeper),
 		hyperlane.NewAppModule(appCodec, app.HyperlaneKeeper),
 		warp.NewAppModule(appCodec, app.WarpKeeper),
 		// consumerModule,
@@ -972,6 +992,7 @@ func NewChainApp(
 		wasmtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
 		packetforwardtypes.ModuleName,
+		ratelimittypes.ModuleName,
 		// ccvconsumertypes.ModuleName,
 	)
 
@@ -991,6 +1012,7 @@ func NewChainApp(
 		wasmtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
 		packetforwardtypes.ModuleName,
+		ratelimittypes.ModuleName,
 		// ccvconsumertypes.ModuleName,
 	)
 
@@ -1033,6 +1055,7 @@ func NewChainApp(
 		tokenfactorytypes.ModuleName,
 		globalfeetypes.ModuleName,
 		packetforwardtypes.ModuleName,
+		ratelimittypes.ModuleName,
 		hyperlanetypes.ModuleName,
 		warptypes.ModuleName,
 		// ccvconsumertypes.ModuleName,
@@ -1465,6 +1488,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(tokenfactorytypes.ModuleName)
 	paramsKeeper.Subspace(globalfee.ModuleName)
+	paramsKeeper.Subspace(ratelimittypes.ModuleName)
 	// paramsKeeper.Subspace(ccvconsumertypes.ModuleName)
 
 	return paramsKeeper
