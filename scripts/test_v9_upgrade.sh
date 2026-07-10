@@ -190,8 +190,7 @@ say "  validator rate = $VRATE"
 case "$VRATE" in 0.05*) ;; *) die "expected validator raised to 0.05, got $VRATE" ;; esac
 
 say "--- assertion 3: ratelimit module live ---"
-"${BIN9[@]}" query ratelimit all-rate-limits "${Q[@]}" > $LOG_DIR/ratelimits.json 2>&1 \
-  || "${BIN9[@]}" query ratelimit rate-limits "${Q[@]}" > $LOG_DIR/ratelimits.json 2>&1 \
+"${BIN9[@]}" query ratelimit list-rate-limits "${Q[@]}" > $LOG_DIR/ratelimits.json 2>&1 \
   || die "ratelimit query surface dead (see $LOG_DIR/ratelimits.json)"
 say "  OK: $(cat $LOG_DIR/ratelimits.json | head -c 120)"
 
@@ -252,10 +251,15 @@ q transfer        ibc-transfer denoms
 q ica_host        interchain-accounts host params
 q tokenfactory    tokenfactory params
 q globalfee       globalfee minimum-gas-prices
-q pfm             packetforward params
-q ratelimit       ratelimit all-rate-limits
+q ratelimit       ratelimit list-rate-limits
 q hyperlane       hyperlane mailboxes
-q warp            hyperlane-transfer tokens
+q warp            warp tokens
+# PFM registers no CLI query in v10 — exercise its query surface via REST.
+if curl -sf http://127.0.0.1:$REST_PORT/packetforward/v1/params > $LOG_DIR/q_pfm.json 2>&1; then
+  say "  OK   query pfm (REST)"
+else
+  say "  FAIL query pfm (REST)"; QFAIL=$((QFAIL+1))
+fi
 [ $QFAIL -eq 0 ] || die "$QFAIL module queries failed (see $LOG_DIR/q_*.json)"
 
 say "--- MSG BATTERY (generate-only): every module's tx builds ---"
