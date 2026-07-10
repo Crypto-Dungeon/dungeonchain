@@ -4,7 +4,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
-	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/ratelimit/types"
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v10/types"
 )
 
 const (
