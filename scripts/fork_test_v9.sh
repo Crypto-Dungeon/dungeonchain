@@ -104,8 +104,44 @@ cmd_statesync() {
   say "STATESYNC DONE"
 }
 
+cmd_dbcopy() {
+  # State-sync from srv11 is blocked by its allow_duplicate_ip=false (HOH on
+  # this box is already its peer). Instead: live rsync of HOH's data (dirty),
+  # brief validator stop, delta rsync (seconds), restart. Downtime well under
+  # the ~12.5min jail margin; HOH is ~9.5% VP so consensus is unaffected.
+  [ -n "${SUDO_PW:-}" ] || die "set SUDO_PW for the brief HOH stop/start"
+  UNIT=$(systemctl list-units --type=service --no-legend | grep -oiE "dungeon[a-z.-]*\.service" | head -1)
+  [ -n "$UNIT" ] || die "cannot find the dungeond systemd unit"
+  say "--- live pre-copy of HOH data (no downtime) — unit=$UNIT ---"
+  kill_fork
+  rm -rf $SS_HOME
+  $BIN_V8 init ss-throwaway --chain-id dungeon-1 --home $SS_HOME > /dev/null 2>&1
+  cp $HOME/.dungeonchain/config/genesis.json $SS_HOME/config/genesis.json
+  set_ports $SS_HOME
+  rsync -a --delete $HOME/.dungeonchain/data/ $SS_HOME/data/
+  [ -d $HOME/.dungeonchain/wasm ] && rsync -a --delete $HOME/.dungeonchain/wasm/ $SS_HOME/wasm/
+  say "  pre-copy done ($(du -sh $SS_HOME/data | cut -f1))"
+
+  say "--- brief HOH stop for the consistent delta copy ---"
+  echo "$SUDO_PW" | sudo -S systemctl stop $UNIT
+  trap "echo \"$SUDO_PW\" | sudo -S systemctl start $UNIT" EXIT
+  T0=$(date +%s)
+  rsync -a --delete $HOME/.dungeonchain/data/ $SS_HOME/data/
+  [ -d $HOME/.dungeonchain/wasm ] && rsync -a --delete $HOME/.dungeonchain/wasm/ $SS_HOME/wasm/
+  echo "$SUDO_PW" | sudo -S systemctl start $UNIT
+  trap - EXIT
+  say "  HOH downtime: $(( $(date +%s) - T0 ))s — verifying it resumes"
+  for i in $(seq 1 30); do
+    sleep 5
+    CU=$(curl -s http://127.0.0.1:26657/status 2>/dev/null | jq -r '.result.sync_info.catching_up // "down"')
+    [ "$CU" = "false" ] && { say "  HOH back in sync"; break; }
+    [ $i -eq 30 ] && die "HOH did not come back cleanly — CHECK $UNIT NOW"
+  done
+  say "DBCOPY DONE"
+}
+
 cmd_export() {
-  say "--- exporting real state from the synced throwaway ---"
+  say "--- exporting real state from the copied home ---"
   pgrep -f -- "--home $SS_HOME" > /dev/null && { pkill -f -- "--home $SS_HOME"; sleep 5; }
   $BIN_V8 export --home $SS_HOME > $EXPORTED 2> $LOG/export.err \
     || die "export failed (see $LOG/export.err)"
@@ -250,10 +286,11 @@ cmd_battery() {
 
 case "${1:-all}" in
   statesync) cmd_statesync ;;
+  dbcopy)    cmd_dbcopy ;;
   export)    cmd_export ;;
   surgery)   cmd_surgery ;;
   run)       cmd_run ;;
   battery)   cmd_battery ;;
-  all)       cmd_statesync; cmd_export; cmd_surgery; cmd_run ;;
-  *) die "usage: $0 statesync|export|surgery|run|battery|all" ;;
+  all)       cmd_dbcopy; cmd_export; cmd_surgery; cmd_run ;;
+  *) die "usage: $0 statesync|dbcopy|export|surgery|run|battery|all" ;;
 esac
