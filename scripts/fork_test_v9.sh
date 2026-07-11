@@ -85,9 +85,11 @@ cmd_statesync() {
   sed -i "s#^rpc_servers = \"\"#rpc_servers = \"$TRUST_RPC,$TRUST_RPC\"#" $CFG
   sed -i "s/^trust_height = 0/trust_height = $TRUST_H/" $CFG
   sed -i "s/^trust_hash = \"\"/trust_hash = \"$TRUST_HASH\"/" $CFG
-  sed -i "s/^persistent_peers = \"\"/persistent_peers = \"$SRV11_PEER\"/" $CFG
 
-  nohup $BIN_V8 start --home $SS_HOME > $LOG/ss.log 2>&1 &
+  # peer via CLI flag — sed on persistent_peers proved unreliable (a silent
+  # no-match left the node peerless, discovering snapshots forever)
+  nohup $BIN_V8 start --home $SS_HOME \
+    --p2p.persistent_peers "$SRV11_PEER" > $LOG/ss.log 2>&1 &
   say "  syncing (pid $!) — waiting for catching_up=false"
   for i in $(seq 1 240); do
     sleep 10
