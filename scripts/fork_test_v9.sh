@@ -110,8 +110,13 @@ cmd_dbcopy() {
   # brief validator stop, delta rsync (seconds), restart. Downtime well under
   # the ~12.5min jail margin; HOH is ~9.5% VP so consensus is unaffected.
   [ -n "${SUDO_PW:-}" ] || die "set SUDO_PW for the brief HOH stop/start"
-  UNIT=$(systemctl list-units --type=service --no-legend | grep -oiE "dungeon[a-z.-]*\.service" | head -1)
-  [ -n "$UNIT" ] || die "cannot find the dungeond systemd unit"
+  # Derive the unit from the RUNNING node's cgroup — name-grepping matched
+  # dungeon-frost-daemon.service (the bridge signer!) on this box.
+  NODE_PID=$(pgrep -f "cosmovisor run start --home $HOME/.dungeonchain" | head -1)
+  [ -n "$NODE_PID" ] || die "cannot find the running HOH cosmovisor process"
+  UNIT=$(grep -oE "[a-zA-Z0-9_.@-]+\.service" /proc/$NODE_PID/cgroup | head -1)
+  [ -n "$UNIT" ] || die "cannot map HOH pid $NODE_PID to a systemd unit"
+  case "$UNIT" in *frost*|*bridge*|*relayer*) die "refusing to touch $UNIT";; esac
   say "--- live pre-copy of HOH data (no downtime) — unit=$UNIT ---"
   kill_fork
   rm -rf $SS_HOME
