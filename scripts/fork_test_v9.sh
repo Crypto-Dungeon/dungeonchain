@@ -123,8 +123,9 @@ cmd_dbcopy() {
   $BIN_V8 init ss-throwaway --chain-id dungeon-1 --home $SS_HOME > /dev/null 2>&1
   cp $HOME/.dungeonchain/config/genesis.json $SS_HOME/config/genesis.json
   set_ports $SS_HOME
-  rsync -a --delete $HOME/.dungeonchain/data/ $SS_HOME/data/
-  [ -d $HOME/.dungeonchain/wasm ] && rsync -a --delete $HOME/.dungeonchain/wasm/ $SS_HOME/wasm/
+  # dirty copy of a live DB: exit 24 (files vanished mid-copy) is expected
+  rsync -a --delete $HOME/.dungeonchain/data/ $SS_HOME/data/ || [ $? -eq 24 ]
+  [ ! -d $HOME/.dungeonchain/wasm ] || rsync -a --delete $HOME/.dungeonchain/wasm/ $SS_HOME/wasm/ || [ $? -eq 24 ]
   say "  pre-copy done ($(du -sh $SS_HOME/data | cut -f1))"
 
   say "--- brief HOH stop for the consistent delta copy ---"
