@@ -16,6 +16,8 @@ BIN_V9=${BIN_V9:-$HOME/bin/dungeond-v9}
 WORK=$HOME/dungeon-fork
 SS_HOME=$WORK/ss-node          # throwaway state-sync node
 FORK_HOME=$WORK/node           # the fork chain
+PEER_HOME=$WORK/peer           # dummy follower — see cmd_run for why it exists
+PEER_OFF=100                   # peer's port block = every main port + 100
 EXPORTED=$WORK/exported_genesis.json
 FORKGEN=$WORK/fork_genesis.json
 CHAIN=dungeon-fork-1
@@ -38,16 +40,20 @@ mkdir -p $WORK $LOG
 # the failure we were trying to read
 new_log() { echo "$LOG/$1-$(date +%Y%m%d-%H%M%S).log"; }
 
-set_ports() { # set_ports <home>
-  local H=$1
-  sed -i "s#^laddr = \"tcp://127.0.0.1:26657\"#laddr = \"tcp://127.0.0.1:$RPC_PORT\"#" $H/config/config.toml
-  sed -i "s#^laddr = \"tcp://0.0.0.0:26656\"#laddr = \"tcp://0.0.0.0:$P2P_PORT\"#" $H/config/config.toml
-  sed -i "s#^pprof_laddr = \"localhost:6060\"#pprof_laddr = \"localhost:$PPROF\"#" $H/config/config.toml
-  sed -i "s#^address = \"tcp://localhost:1317\"#address = \"tcp://localhost:$REST_PORT\"#" $H/config/app.toml
-  sed -i "s#^address = \"localhost:9090\"#address = \"localhost:$GRPC_PORT\"#" $H/config/app.toml
-  sed -i "s#^address = \"localhost:9091\"#address = \"localhost:$GRPC_WEB\"#" $H/config/app.toml
+set_ports() { # set_ports <home> [port_offset]
+  local H=$1 O=${2:-0}
+  sed -i "s#^laddr = \"tcp://127.0.0.1:26657\"#laddr = \"tcp://127.0.0.1:$((RPC_PORT+O))\"#" $H/config/config.toml
+  sed -i "s#^laddr = \"tcp://0.0.0.0:26656\"#laddr = \"tcp://0.0.0.0:$((P2P_PORT+O))\"#" $H/config/config.toml
+  sed -i "s#^pprof_laddr = \"localhost:6060\"#pprof_laddr = \"localhost:$((PPROF+O))\"#" $H/config/config.toml
+  sed -i "s#^address = \"tcp://localhost:1317\"#address = \"tcp://localhost:$((REST_PORT+O))\"#" $H/config/app.toml
+  sed -i "s#^address = \"localhost:9090\"#address = \"localhost:$((GRPC_PORT+O))\"#" $H/config/app.toml
+  sed -i "s#^address = \"localhost:9091\"#address = \"localhost:$((GRPC_WEB+O))\"#" $H/config/app.toml
   sed -i "s#^minimum-gas-prices = \"\"#minimum-gas-prices = \"0$DENOM\"#" $H/config/app.toml
   sed -i "/^\\[api\\]/,/^\\[/{s/^enable = false/enable = true/;}" $H/config/app.toml
+  # both fork nodes live on 127.0.0.1: strict addr-book calls that unroutable
+  # and refuses to dial it, and duplicate-IP would reject the second one
+  sed -i "s/^addr_book_strict = true/addr_book_strict = false/" $H/config/config.toml
+  sed -i "s/^allow_duplicate_ip = false/allow_duplicate_ip = true/" $H/config/config.toml
 }
 
 wait_height() { # wait_height <target> <logfile> [timeout_s]
@@ -69,6 +75,7 @@ wait_height() { # wait_height <target> <logfile> [timeout_s]
 kill_fork() {
   pkill -f -- "--home $SS_HOME" 2>/dev/null || true
   pkill -f -- "--home $FORK_HOME" 2>/dev/null || true
+  pkill -f -- "--home $PEER_HOME" 2>/dev/null || true
   for i in $(seq 1 30); do
     pgrep -f -- "--home $WORK" > /dev/null 2>&1 || break
     [ $i -eq 15 ] && pkill -9 -f -- "--home $WORK" 2>/dev/null
@@ -183,9 +190,10 @@ cmd_surgery() {
   say "SURGERY DONE (forker=$FORKER)"
 }
 
-start_node() { # start_node <binary> <logfile>
-  nohup $1 start --home $FORK_HOME --x-crisis-skip-assert-invariants > $2 2>&1 &
-  say "  started $(basename $1) (pid $!)"
+start_node() { # start_node <binary> <home> <logfile> [extra flags...]
+  local bin=$1 home=$2 log=$3; shift 3
+  nohup $bin start --home $home --x-crisis-skip-assert-invariants "$@" > $log 2>&1 &
+  say "  started $(basename $bin) on $(basename $home) (pid $!)"
 }
 
 cmd_run() {
@@ -201,9 +209,30 @@ cmd_run() {
   mkdir -p $FORK_HOME/data
   echo '{"height":"0","round":0,"step":0}' > $FORK_HOME/data/priv_validator_state.json
   cp $FORKGEN $FORK_HOME/config/genesis.json
-  V8LOG=$(new_log v8)
-  start_node $BIN_V8 $V8LOG
-  say "  log: $V8LOG"
+  # idempotent — the port seds match stock defaults and no-op on an already
+  # configured home; this is here so homes built by an older surgery still pick
+  # up the loopback p2p settings the dummy peer below needs
+  set_ports $FORK_HOME
+
+  # CometBFT 0.38 removed the block_sync toggle: a node skips block-sync only if
+  # it is the ONLY validator (onlyValidatorIsUs), and this fork deliberately keeps
+  # the real mainnet validator set — we just hold ~85% VP through the swapped key.
+  # BlockPool.IsCaughtUp() is false while len(peers)==0, so a solo node sits in
+  # waitSync forever (observed: stuck at 17861900 step NewHeight). One dummy
+  # follower is enough to flip it; it has no voting power and never proposes.
+  say "  provisioning the dummy peer (same genesis, no voting power)"
+  rm -rf $PEER_HOME
+  $BIN_V8 init forkpeer --chain-id $CHAIN --home $PEER_HOME > /dev/null 2>&1
+  cp $FORKGEN $PEER_HOME/config/genesis.json
+  set_ports $PEER_HOME $PEER_OFF
+  sed -i "s#^timeout_commit = \"5s\"#timeout_commit = \"2s\"#" $PEER_HOME/config/config.toml
+  MAIN_ADDR="$($BIN_V8 comet show-node-id --home $FORK_HOME)@127.0.0.1:$P2P_PORT"
+  PEER_ADDR="$($BIN_V8 comet show-node-id --home $PEER_HOME)@127.0.0.1:$((P2P_PORT+PEER_OFF))"
+
+  V8LOG=$(new_log v8); V8PLOG=$(new_log v8-peer)
+  start_node $BIN_V8 $PEER_HOME $V8PLOG --p2p.persistent_peers "$MAIN_ADDR"
+  start_node $BIN_V8 $FORK_HOME $V8LOG --p2p.persistent_peers "$PEER_ADDR"
+  say "  logs: $V8LOG (main) / $V8PLOG (peer)"
   INITIAL=$(jq -r '.initial_height // "1"' $FORKGEN)
   H=$(wait_height $((INITIAL+3)) $V8LOG)
   say "  fork producing blocks at $H"
@@ -239,12 +268,14 @@ EOF
     pgrep -f -- "--home $FORK_HOME" > /dev/null || { say "  v8 exited"; break; }
     sleep 3
   done
-  pkill -f -- "--home $FORK_HOME" 2>/dev/null || true; sleep 5
+  kill_fork   # the peer halts on the same upgrade panic — take both down
+  sleep 5
 
-  say "--- swapping to v9 on REAL migrated state ---"
-  V9LOG=$(new_log v9)
-  start_node $BIN_V9 $V9LOG
-  say "  log: $V9LOG"
+  say "--- swapping to v9 on REAL migrated state (peer follows, or nothing syncs) ---"
+  V9LOG=$(new_log v9); V9PLOG=$(new_log v9-peer)
+  start_node $BIN_V9 $PEER_HOME $V9PLOG --p2p.persistent_peers "$MAIN_ADDR"
+  start_node $BIN_V9 $FORK_HOME $V9LOG --p2p.persistent_peers "$PEER_ADDR"
+  say "  logs: $V9LOG (main) / $V9PLOG (peer)"
   NH=$(wait_height $((UPH+3)) $V9LOG)
   grep -q "applying upgrade \"v9\"" $V9LOG || say "  (upgrade-apply line not in log tail — verify below)"
   say "  v9 producing blocks at $NH — REAL-STATE MIGRATION SUCCEEDED"
@@ -326,6 +357,7 @@ case "${1:-all}" in
   surgery)   cmd_surgery ;;
   run)       cmd_run ;;
   battery)   cmd_battery ;;
+  kill)      kill_fork; say "fork + peer stopped" ;;
   all)       cmd_dbcopy; cmd_export; cmd_surgery; cmd_run ;;
-  *) die "usage: $0 statesync|dbcopy|export|surgery|run|battery|all" ;;
+  *) die "usage: $0 statesync|dbcopy|export|surgery|run|battery|kill|all" ;;
 esac
