@@ -34,6 +34,9 @@ FEES="--gas auto --gas-adjustment 1.6 --fees 200000$DENOM"
 say() { echo "[$(date +%H:%M:%S)] $*"; }
 die() { echo "FAIL: $*" >&2; exit 1; }
 mkdir -p $WORK $LOG
+# one log file per phase invocation — reruns used to clobber the log that held
+# the failure we were trying to read
+new_log() { echo "$LOG/$1-$(date +%Y%m%d-%H%M%S).log"; }
 
 set_ports() { # set_ports <home>
   local H=$1
@@ -47,12 +50,18 @@ set_ports() { # set_ports <home>
   sed -i "/^\\[api\\]/,/^\\[/{s/^enable = false/enable = true/;}" $H/config/app.toml
 }
 
-wait_height() { # wait_height <target> <timeout_s>
-  local target=$1 timeout=$2 start=$(date +%s) h
+wait_height() { # wait_height <target> <logfile> [timeout_s]
+  # InitChain over the 243MB fork genesis takes a long, unpredictable time, so
+  # the real liveness signal is "the process is still up", not a wall clock.
+  local target=$1 log=$2 timeout=${3:-4200} start=$(date +%s) h
   while true; do
+    pgrep -f -- "--home $FORK_HOME" > /dev/null || {
+      echo "--- last 30 lines of $log ---" >&2; tail -30 "$log" >&2
+      die "node exited before reaching height $target"
+    }
     h=$(curl -s http://127.0.0.1:$RPC_PORT/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height // "0"')
     [ -n "$h" ] && [ "$h" != "null" ] && [ "$h" -ge "$target" ] 2>/dev/null && { echo $h; return 0; }
-    [ $(($(date +%s)-start)) -gt $timeout ] && die "timeout waiting for height $target (at ${h:-none})"
+    [ $(($(date +%s)-start)) -gt $timeout ] && die "timeout waiting for height $target (at ${h:-none}, see $log)"
     sleep 5
   done
 }
@@ -88,17 +97,18 @@ cmd_statesync() {
 
   # peer via CLI flag — sed on persistent_peers proved unreliable (a silent
   # no-match left the node peerless, discovering snapshots forever)
+  SSLOG=$(new_log ss)
   nohup $BIN_V8 start --home $SS_HOME \
-    --p2p.persistent_peers "$SRV11_PEER" > $LOG/ss.log 2>&1 &
-  say "  syncing (pid $!) — waiting for catching_up=false"
+    --p2p.persistent_peers "$SRV11_PEER" > $SSLOG 2>&1 &
+  say "  syncing (pid $!) — waiting for catching_up=false (log: $SSLOG)"
   for i in $(seq 1 240); do
     sleep 10
-    CU=$(curl -s http://127.0.0.1:$RPC_PORT/status 2>/dev/null | jq -r '.result.sync_info.catching_up // "starting"')
+    CU=$(curl -s http://127.0.0.1:$RPC_PORT/status 2>/dev/null | jq -r '.result.sync_info.catching_up | if . == null then "starting" else tostring end')
     H=$(curl -s http://127.0.0.1:$RPC_PORT/status 2>/dev/null | jq -r '.result.sync_info.latest_block_height // "0"')
     [ "$CU" = "false" ] && [ "$H" -gt "$TRUST_H" ] 2>/dev/null && { say "  synced at $H"; break; }
     [ $((i % 6)) -eq 0 ] && say "  ... catching_up=$CU height=$H"
-    pgrep -f -- "--home $SS_HOME" > /dev/null || die "ss node died (see $LOG/ss.log)"
-    [ $i -eq 240 ] && die "state-sync timeout (see $LOG/ss.log)"
+    pgrep -f -- "--home $SS_HOME" > /dev/null || die "ss node died (see $SSLOG)"
+    [ $i -eq 240 ] && die "state-sync timeout (see $SSLOG)"
   done
   pkill -f -- "--home $SS_HOME"; sleep 5
   say "STATESYNC DONE"
@@ -149,8 +159,13 @@ cmd_dbcopy() {
 cmd_export() {
   say "--- exporting real state from the copied home ---"
   pgrep -f -- "--home $SS_HOME" > /dev/null && { pkill -f -- "--home $SS_HOME"; sleep 5; }
-  $BIN_V8 export --home $SS_HOME > $EXPORTED 2> $LOG/export.err \
-    || die "export failed (see $LOG/export.err)"
+  EXPERR=$(new_log export)
+  # v8 can't export this state cleanly; v6 can, and the result is what v8 boots.
+  ${EXPORT_BIN:-$WORK/dungeond-v6} export --home $SS_HOME > $EXPORTED 2> $EXPERR \
+    || die "export failed (see $EXPERR)"
+  STRIP=$WORK/strip_localhost.py
+  [ -f "$STRIP" ] || STRIP="$(dirname "$0")/strip_localhost.py"
+  python3 "$STRIP" "$EXPORTED" || die "localhost strip failed"
   say "EXPORT DONE: $(du -h $EXPORTED | cut -f1) at $EXPORTED"
 }
 
@@ -176,12 +191,21 @@ start_node() { # start_node <binary> <logfile>
 cmd_run() {
   say "--- booting v8 on the fork (InitChain over real state — can take a while) ---"
   kill_fork
-  rm -rf $FORK_HOME/data
+  [ -f $FORKGEN ] || die "no $FORKGEN — run the surgery phase first"
+  [ -f $FORK_HOME/config/priv_validator_key.json ] || die "no $FORK_HOME — run the surgery phase first"
+  # EVERY run starts from a clean comet state AND the CURRENT fork genesis.
+  # Comet persists the genesis validator set in state.db, so a leftover data/
+  # replays the pre-surgery set ("genesisValidators[1] != req.Validators[1]"),
+  # and a genesis.json left from an earlier surgery boots the wrong doc entirely.
+  rm -rf $FORK_HOME/data $FORK_HOME/wasm
   mkdir -p $FORK_HOME/data
   echo '{"height":"0","round":0,"step":0}' > $FORK_HOME/data/priv_validator_state.json
-  start_node $BIN_V8 $LOG/v8.log
-  INITIAL=$(jq -r '.initial_height' $FORKGEN)
-  H=$(wait_height $((INITIAL+3)) 2700)
+  cp $FORKGEN $FORK_HOME/config/genesis.json
+  V8LOG=$(new_log v8)
+  start_node $BIN_V8 $V8LOG
+  say "  log: $V8LOG"
+  INITIAL=$(jq -r '.initial_height // "1"' $FORKGEN)
+  H=$(wait_height $((INITIAL+3)) $V8LOG)
   say "  fork producing blocks at $H"
 
   FORKER=$($BIN_V8 keys show forker -a "${KR[@]}")
@@ -211,22 +235,27 @@ EOF
 
   say "--- waiting for halt at $UPH ---"
   for i in $(seq 1 300); do
-    grep -qE "UPGRADE \"v9\" NEEDED|CONSENSUS FAILURE" $LOG/v8.log && { say "  halt observed"; break; }
+    grep -qE "UPGRADE \"v9\" NEEDED|CONSENSUS FAILURE" $V8LOG && { say "  halt observed"; break; }
     pgrep -f -- "--home $FORK_HOME" > /dev/null || { say "  v8 exited"; break; }
     sleep 3
   done
   pkill -f -- "--home $FORK_HOME" 2>/dev/null || true; sleep 5
 
   say "--- swapping to v9 on REAL migrated state ---"
-  start_node $BIN_V9 $LOG/v9.log
-  NH=$(wait_height $((UPH+3)) 2700)
-  grep -q "applying upgrade \"v9\"" $LOG/v9.log || say "  (upgrade-apply line not in log tail — verify below)"
+  V9LOG=$(new_log v9)
+  start_node $BIN_V9 $V9LOG
+  say "  log: $V9LOG"
+  NH=$(wait_height $((UPH+3)) $V9LOG)
+  grep -q "applying upgrade \"v9\"" $V9LOG || say "  (upgrade-apply line not in log tail — verify below)"
   say "  v9 producing blocks at $NH — REAL-STATE MIGRATION SUCCEEDED"
   cmd_battery
 }
 
 cmd_battery() {
   say "--- REAL-STATE BATTERY (v9 binary, forked mainnet state) ---"
+  # standalone rerun: the battery only reads/writes through a LIVE fork node
+  curl -sf http://127.0.0.1:$RPC_PORT/status > /dev/null \
+    || die "no fork node answering on :$RPC_PORT — run the 'run' phase first"
   Q=(--node $NODE_URL -o json)
   FORKER=$($BIN_V9 keys show forker -a "${KR[@]}")
   TX=(--chain-id $CHAIN --node $NODE_URL --keyring-backend test --home $FORK_HOME -y -o json)
