@@ -13,6 +13,11 @@ set -eu
 
 BIN_V8=${BIN_V8:-$HOME/.dungeonchain/cosmovisor/upgrades/v8/bin/dungeond}
 BIN_V9=${BIN_V9:-$HOME/bin/dungeond-v9}
+# v8 is statically linked; v9 links libwasmvm 2.3.4 dynamically via a RUNPATH
+# into the go module cache, which no longer exists on crypto7. Point LIB_V9 at
+# a directory holding the matching libwasmvm.x86_64.so. A MISMATCHED lib does
+# not error, it segfaults inside init_cache — the version has to be exact.
+[ -z "${LIB_V9:-}" ] || export LD_LIBRARY_PATH=$LIB_V9
 WORK=$HOME/dungeon-fork
 SS_HOME=$WORK/ss-node          # throwaway state-sync node
 FORK_HOME=$WORK/node           # the fork chain
@@ -202,6 +207,11 @@ cmd_run() {
   kill_fork
   [ -f $FORKGEN ] || die "no $FORKGEN — run the surgery phase first"
   [ -f $FORK_HOME/config/priv_validator_key.json ] || die "no $FORK_HOME — run the surgery phase first"
+  # both binaries must actually EXECUTE before we spend minutes booting a chain
+  # we cannot finish. 'version' builds the app, so it loads libwasmvm — exactly
+  # the path that killed the v9 swap after a full v8 boot + gov cycle.
+  $BIN_V9 version > /dev/null 2>&1 \
+    || die "v9 binary cannot run (libwasmvm? set LIB_V9): $($BIN_V9 version 2>&1 | head -2 | tr '\n' ' ')"
   # EVERY run starts from a clean comet state AND the CURRENT fork genesis.
   # Comet persists the genesis validator set in state.db, so a leftover data/
   # replays the pre-surgery set ("genesisValidators[1] != req.Validators[1]"),
