@@ -27,6 +27,11 @@ def main():
 
     g["chain_id"] = "dungeon-fork-1"
     g["validators"] = []
+    # SDK 0.50+ AppGenesis nests the comet validator set under consensus.validators.
+    # Clearing only the top-level list leaves the real mainnet set in the genesis
+    # doc -> comet handshake dies with genesisValidators[i] != req.Validators[i].
+    if isinstance(g.get("consensus"), dict):
+        g["consensus"]["validators"] = []
 
     app = g["app_state"]
 
