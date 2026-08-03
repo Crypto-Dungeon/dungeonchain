@@ -183,7 +183,8 @@ cmd_surgery() {
   $BIN_V8 keys add forker "${KR[@]}" --output json > $WORK/forker.json 2>&1
   FORKER=$($BIN_V8 keys show forker -a "${KR[@]}")
   PUB=$(jq -r '.pub_key.value' $FORK_HOME/config/priv_validator_key.json)
-  python3 "$(dirname "$0")/fork_surgery.py" $EXPORTED $FORKGEN "$PUB" "$FORKER"
+  VALCONS=$($BIN_V8 comet show-address --home $FORK_HOME)
+  python3 "$(dirname "$0")/fork_surgery.py" $EXPORTED $FORKGEN "$PUB" "$FORKER" "$VALCONS"
   cp $FORKGEN $FORK_HOME/config/genesis.json
   set_ports $FORK_HOME
   sed -i "s#^timeout_commit = \"5s\"#timeout_commit = \"2s\"#" $FORK_HOME/config/config.toml

@@ -12,7 +12,7 @@ Surgery performed (same technique as the Passage v4.0.2 forkval):
      delegate-then-vote passes any proposal inside the 60s window.
 
 Usage: fork_surgery.py <exported_genesis.json> <out_genesis.json> \
-           <fork_ed25519_pubkey_base64> <forker_bech32_addr>
+           <fork_ed25519_pubkey_base64> <forker_bech32_addr> <fork_valcons_addr>
 """
 import json
 import sys
@@ -43,7 +43,7 @@ def add_supply(supply, denom, delta):
 
 
 def main():
-    src, dst, pubkey_b64, forker = sys.argv[1:5]
+    src, dst, pubkey_b64, forker, valcons = sys.argv[1:6]
     denom = "udgn"
 
     with open(src) as f:
@@ -116,6 +116,24 @@ def main():
         total_bonded += delta
         print(f"scaled {target['description']['moniker']} x{factor} -> "
               f"{new_power * 100 // int(app['staking']['last_total_power'])}% of voting power")
+
+    # --- 2c. slashing signing info for the NEW consensus address ---
+    # x/slashing's BeginBlocker looks up signing info by consensus address for
+    # every signer in the last commit. Swapping the key gives our validator an
+    # address the exported state has never seen, so the FIRST block panics with
+    # "failed to apply block; error no validator signing info found" (observed
+    # 2026-08-03: CONSENSUS FAILURE, receiveRoutine dead, node idle at step 8
+    # with a complete 0.81 commit it could not apply). The old entry is left in
+    # place as a harmless orphan — its address is no longer in the set.
+    infos = app["slashing"]["signing_infos"]
+    entry = json.loads(json.dumps(infos[0]))  # copy this chain's exact schema
+    entry["address"] = valcons
+    si = entry["validator_signing_info"]
+    si.update({"address": valcons, "start_height": "0", "index_offset": "0",
+               "jailed_until": "1970-01-01T00:00:00Z", "tombstoned": False,
+               "missed_blocks_counter": "0"})
+    infos.append(entry)
+    print(f"added slashing signing info for {valcons}")
 
     # --- 3. gov params ---
     gov = app["gov"]["params"]
