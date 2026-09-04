@@ -25,6 +25,7 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/types"
+
 	//	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee" // v10 dropped fee module
 	//	ibcfeekeeper "github.com/cosmos/ibc-go/v10/modules/apps/29-fee/keeper"
 	//	ibcfeetypes "github.com/cosmos/ibc-go/v10/modules/apps/29-fee/types"
@@ -964,6 +965,9 @@ func NewChainApp(
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
+
+	// legacy 09-localhost ClientState (query decode only)
+	registerLegacyLocalhostClientState(interfaceRegistry)
 
 	// NOTE: upgrade module is required to be prioritized
 	app.ModuleManager.SetOrderPreBlockers(
