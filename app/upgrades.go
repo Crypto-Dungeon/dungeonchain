@@ -16,7 +16,8 @@ import (
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade, v8.Upgrade, v9.Upgrade}
+// ponytail: v10 is a dependency-only security upgrade (wasmd/wasmvm patch), no state changes → noop handler.
+var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade, v8.Upgrade, v9.Upgrade, noop.NewUpgrade("v10")}
 var Forks = []upgrades.Fork{v4.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
