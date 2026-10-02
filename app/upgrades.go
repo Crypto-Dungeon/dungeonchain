@@ -5,6 +5,9 @@ import (
 	v4 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v4"
 	v5 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v5"
 	v6 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v6"
+	v7 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v7"
+	v8 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v8"
+	v9 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v9"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -13,7 +16,8 @@ import (
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade}
+// ponytail: v10 is a dependency-only security upgrade (wasmd/wasmvm patch), no state changes → noop handler.
+var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade, v8.Upgrade, v9.Upgrade, noop.NewUpgrade("v10")}
 var Forks = []upgrades.Fork{v4.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
@@ -34,6 +38,9 @@ func (app *ChainApp) RegisterUpgradeHandlers() {
 		Codec:                 app.appCodec,
 		GetStoreKey:           app.GetKey,
 		GlobalFeeKeeper:       &app.GlobalFeeKeeper,
+		HyperlaneKeeper:       app.HyperlaneKeeper,
+		WarpKeeper:            &app.WarpKeeper,
+		StakingKeeper:         app.StakingKeeper,
 	}
 	app.GetStoreKeys()
 	// register all upgrade handlers

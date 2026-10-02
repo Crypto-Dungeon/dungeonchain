@@ -278,6 +278,10 @@ ictest-ratelimit:
 	@echo "Running rate limit e2e test"
 	@cd interchaintest && go test -race -v -run TestIBCRateLimit .
 
+ictest-client-routing:
+	@echo "Running IBC client-routing regression test (v7.0.0 outage guard)"
+	@cd interchaintest && go test -race -v -run TestIBCClientRouting .
+
 ###############################################################################
 ###                                    testnet                              ###
 ###############################################################################

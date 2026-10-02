@@ -3,10 +3,12 @@ package upgrades
 import (
 	"context"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	hyperlanekeeper "github.com/bcp-innovations/hyperlane-cosmos/x/core/keeper"
+	warpkeeper "github.com/bcp-innovations/hyperlane-cosmos/x/warp/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
-	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -17,6 +19,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	globalfeekeeper "github.com/strangelove-ventures/globalfee/x/globalfee/keeper"
 )
 
@@ -34,6 +37,13 @@ type AppKeepers struct {
 
 	// GlobalFeeKeeper allows upgrade handlers to set globalfee params.
 	GlobalFeeKeeper *globalfeekeeper.Keeper
+
+	// HyperlaneKeeper and WarpKeeper are initialized by the v8 bridge hub upgrade.
+	HyperlaneKeeper *hyperlanekeeper.Keeper
+	WarpKeeper      *warpkeeper.Keeper
+
+	// StakingKeeper is used by the v9 upgrade to enforce the min-commission floor.
+	StakingKeeper *stakingkeeper.Keeper
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)
