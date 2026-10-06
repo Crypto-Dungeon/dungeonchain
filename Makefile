@@ -25,7 +25,7 @@ endif
 
 # process build tags
 
-build_tags = netgo
+build_tags = netgo pebbledb
 ifeq ($(LEDGER_ENABLED),true)
   ifeq ($(OS),Windows_NT)
     GCCEXE = $(shell where gcc.exe 2> NUL)
