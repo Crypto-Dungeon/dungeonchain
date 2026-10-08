@@ -147,7 +147,7 @@ jq --arg authority "$authority" '{messages:[{
 broadcast activation-submit val gov submit-proposal "$LOG_DIR/activation-proposal.json"
 proposal=$("${bin[@]}" query gov proposals "${q[@]}" | jq -er '.proposals[-1].id')
 broadcast activation-vote val gov vote "$proposal" yes
-for _ in $(seq 1 45); do
+for _ in $(seq 1 180); do
  "${bin[@]}" query gov proposal "$proposal" "${q[@]}" > "$LOG_DIR/activation-status.json"
  if jq -e '.proposal.status=="PROPOSAL_STATUS_PASSED"' "$LOG_DIR/activation-status.json" >/dev/null; then break; fi
  sleep 1
