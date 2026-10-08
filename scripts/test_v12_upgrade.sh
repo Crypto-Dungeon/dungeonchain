@@ -117,8 +117,9 @@ user=$("${old[@]}" keys show user --keyring-backend test -a)
   --commission-rate 0.05 --commission-max-rate 1 --commission-max-change-rate 0.05 > "$LOG_DIR/gentx.log" 2>&1
 "${old[@]}" genesis collect-gentxs > "$LOG_DIR/collect.log" 2>&1
 genesis="$HOME_DIR/config/genesis.json"
-jq '.app_state.gov.params.voting_period="12s" |
-    .app_state.gov.params.expedited_voting_period="6s" |
+# CLI startup and committed-tx polling must fit on loaded CI runners too.
+jq '.app_state.gov.params.voting_period="90s" |
+    .app_state.gov.params.expedited_voting_period="45s" |
     .app_state.gov.params.min_deposit=[{"denom":"udgn","amount":"1"}] |
     .app_state.gov.params.expedited_min_deposit=[{"denom":"udgn","amount":"2"}] |
     .app_state.staking.params.min_commission_rate="0.050000000000000000" |
@@ -154,7 +155,7 @@ contract=$("${bin[@]}" query wasm list-contract-by-code "$code_id" "${q[@]}" | j
 "${bin[@]}" query globalfee minimum-gas-prices "${q[@]}" > "$LOG_DIR/globalfee-before.json"
 pre_height=$(height)
 authority=$("${bin[@]}" query auth module-account gov "${q[@]}" | jq -er '.account.value.address // .account.base_account.address')
-upgrade_height=$((pre_height + 65))
+upgrade_height=$((pre_height + 180))
 jq -n --arg authority "$authority" --arg height "$upgrade_height" '{messages:[{
   "@type":"/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",authority:$authority,
   plan:{name:"v12",height:$height,info:"isolated SDK55 migration rehearsal"}}],

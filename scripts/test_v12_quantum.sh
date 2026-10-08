@@ -110,8 +110,9 @@ pq=$("${bin[@]}" keys show pq --keyring-backend test -a)
  --commission-rate 0.05 --commission-max-rate 1 --commission-max-change-rate 0.05 > "$LOG_DIR/gentx.log" 2>&1
 "${bin[@]}" genesis collect-gentxs > "$LOG_DIR/collect.log" 2>&1
 genesis="$HOME_DIR/config/genesis.json"
-jq '.app_state.gov.params.voting_period="30s" |
- .app_state.gov.params.expedited_voting_period="15s" |
+# Leave time for CLI startup and committed-tx polling on shared CI runners.
+jq '.app_state.gov.params.voting_period="90s" |
+ .app_state.gov.params.expedited_voting_period="45s" |
  .app_state.gov.params.min_deposit=[{"denom":"udgn","amount":"1"}] |
  .app_state.gov.params.expedited_min_deposit=[{"denom":"udgn","amount":"2"}] |
  .app_state.staking.params.min_commission_rate="0.050000000000000000" |
