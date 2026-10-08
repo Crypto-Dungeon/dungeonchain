@@ -9,3 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: gaurav-nelson/github-action-markdown-link-check@1.0.15
+        with:
+          # Check maintained Dungeon docs. Upstream port docs retain their
+          # original repository-relative links and localhost API examples.
+          folder-path: 'docs,internal'
+          file-path: './README.md,./third_party/README.md'
