@@ -1,0 +1,74 @@
+[
+  {
+    "directory": "third_party/group",
+    "module": "github.com/cosmos/cosmos-sdk/x/group",
+    "upstream": "github.com/cosmos/cosmos-sdk@v0.53.7/x/group",
+    "version": "v0.53.7",
+    "source_module": "github.com/cosmos/cosmos-sdk",
+    "upstream_go_module_sum": "h1:CqY48EB118WuR2EcTobiFACOQbfP8Dyyb5C5nAOq3XM=",
+    "upstream_zip_sha256": "5ed6b434f810da6cac4bcf36fb7e6ef64d983cf2bf39dbfaaea005744691d8e1"
+  },
+  {
+    "directory": "third_party/params",
+    "module": "github.com/cosmos/cosmos-sdk/x/params",
+    "upstream": "github.com/cosmos/cosmos-sdk@v0.53.7/x/params",
+    "version": "v0.53.7",
+    "source_module": "github.com/cosmos/cosmos-sdk",
+    "upstream_go_module_sum": "h1:CqY48EB118WuR2EcTobiFACOQbfP8Dyyb5C5nAOq3XM=",
+    "upstream_zip_sha256": "5ed6b434f810da6cac4bcf36fb7e6ef64d983cf2bf39dbfaaea005744691d8e1"
+  },
+  {
+    "directory": "third_party/tokenfactory",
+    "module": "github.com/strangelove-ventures/tokenfactory",
+    "upstream": "github.com/strangelove-ventures/tokenfactory@v0.50.7-wasmvm2",
+    "version": "v0.50.7-wasmvm2",
+    "source_module": "github.com/strangelove-ventures/tokenfactory",
+    "upstream_go_module_sum": "h1:oB0Bvo0S4QiCWJV2xKc2iAbw+QhO62dGT7517Xze/5U=",
+    "upstream_zip_sha256": "e3b0172507bb887a28ee6d45f77bdfb758a7e39000e3d55cfe0566f00360a664"
+  },
+  {
+    "directory": "third_party/globalfee",
+    "module": "github.com/strangelove-ventures/globalfee",
+    "upstream": "github.com/strangelove-ventures/globalfee@v0.50.1",
+    "version": "v0.50.1",
+    "source_module": "github.com/strangelove-ventures/globalfee",
+    "upstream_go_module_sum": "h1:UkRoJOFNiswmbAxaTPUI1HndTxQ28XD3yWwYwX6AjI8=",
+    "upstream_zip_sha256": "e9058367737985afcf7f9818de348baa4ad2ccc558b2a98d9c5645c0c87b89b5"
+  },
+  {
+    "directory": "third_party/hyperlane",
+    "module": "github.com/bcp-innovations/hyperlane-cosmos",
+    "upstream": "github.com/bcp-innovations/hyperlane-cosmos@v1.1.0",
+    "version": "v1.1.0",
+    "source_module": "github.com/bcp-innovations/hyperlane-cosmos",
+    "upstream_go_module_sum": "h1:WXt+WrKv2DG/xVIkLvggDRbi/2law104Vj6AWZGxHNw=",
+    "upstream_zip_sha256": "f14192f6f49db30255ee08a1f1b10fc6cb7ef3b0ebb52b3f318414f1bff51c08"
+  },
+  {
+    "directory": "third_party/wasmd",
+    "module": "github.com/CosmWasm/wasmd",
+    "upstream": "github.com/!cosm!wasm/wasmd@v0.70.4",
+    "version": "v0.70.4",
+    "source_module": "github.com/CosmWasm/wasmd",
+    "upstream_go_module_sum": "h1:tJzqWYEwoEcVph00FDlgZtabVgh5+EmNOjYPyI2sPR8=",
+    "upstream_zip_sha256": "ad09e99f302601c9d29eb0cf54b53e698e657314e9b13f285e34855d7a5f0bed"
+  },
+  {
+    "directory": "third_party/capability",
+    "module": "github.com/cosmos/ibc-go/modules/capability",
+    "upstream": "github.com/cosmos/ibc-go/modules/capability@v1.0.1",
+    "version": "v1.0.1",
+    "source_module": "github.com/cosmos/ibc-go/modules/capability",
+    "upstream_go_module_sum": "h1:ibwhrpJ3SftEEZRxCRkH0fQZ9svjthrX2+oXdZvzgGI=",
+    "upstream_zip_sha256": "37365a50fec48009960299dfb6f760cde404221a618aee89a1d4eefbe7001b1e"
+  },
+  {
+    "directory": "third_party/legacy-api",
+    "module": "github.com/Crypto-Dungeon/dungeonchain/compatapi",
+    "upstream": "cosmossdk.io/api@v0.9.2/cosmos/{group,params}",
+    "version": "v0.9.2",
+    "source_module": "cosmossdk.io/api",
+    "upstream_go_module_sum": "h1:9i9ptOBdmoIEVEVWLtYYHjxZonlF/aOVODLFaxpmNtg=",
+    "upstream_zip_sha256": "5658a4cbf5f0afba127869818f214eb110246e333f3a7bfb6faab496b368f58e"
+  }
+]

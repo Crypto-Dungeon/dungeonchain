@@ -1,51 +1,16 @@
-FROM golang:1.23-alpine AS go-builder
-
-SHELL ["/bin/sh", "-ecuxo", "pipefail"]
-
-RUN apk add --no-cache ca-certificates build-base git
-
+FROM golang:1.27.1-bookworm AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git file musl-tools gcc-11 && rm -rf /var/lib/apt/lists/*
 WORKDIR /code
+COPY . .
+ARG COMMIT
+ARG VERSION=12.0.0-rc.1
+RUN COMMIT="$COMMIT" VERSION="$VERSION" REALGCC=gcc-11 bash scripts/build_v12_release.sh
 
-ADD go.mod go.sum ./
-RUN set -eux; \
-    export ARCH=$(uname -m); \
-    WASM_VERSION=$(go list -m all | grep github.com/CosmWasm/wasmvm/v2 || true); \
-    if [ ! -z "${WASM_VERSION}" ]; then \
-      WASMVM_REPO=$(echo $WASM_VERSION | awk '{print $1}');\
-      WASMVM_VERS=$(echo $WASM_VERSION | awk '{print $2}');\
-      if [ $(echo $WASMVM_REPO | grep -c '/v2$') -gt 0 ]; then \
-        WASMVM_REPO=$(echo $WASMVM_REPO | sed 's/\/v2$//');\
-      fi; \
-      wget -O /lib/libwasmvm_muslc.a https://${WASMVM_REPO}/releases/download/${WASMVM_VERS}/libwasmvm_muslc.$(uname -m).a;\
-      # https://github.com/strangelove-ventures/heighliner/pull/263
-      wget -O /lib/libwasmvm.so https://${WASMVM_REPO}/releases/download/${WASMVM_VERS}/libwasmvm.$(uname -m).so;\
-      wget -O /lib/libwasmvm_muslc.$(uname -m).a https://${WASMVM_REPO}/releases/download/${WASMVM_VERS}/libwasmvm_muslc.$(uname -m).a;\
-      wget -O /lib/libwasmvm.$(uname -m).so https://${WASMVM_REPO}/releases/download/${WASMVM_VERS}/libwasmvm.$(uname -m).so;\
-    fi; \
-    go mod download;
-
-# Copy over code
-COPY . /code
-
-# force it to use static lib (from above) not standard libgo_cosmwasm.so file
-# then log output of file /code/bin/dungeond
-# then ensure static linking
-RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LINK_STATICALLY=true make build \
-  && file /code/build/dungeond \
-  && echo "Ensuring binary is statically linked ..." \
-  && (file /code/build/dungeond | grep "statically linked")
-
-# --------------------------------------------------------
-FROM alpine:3.16
-
-COPY --from=go-builder /code/build/dungeond /usr/bin/dungeond
-
-# Install dependencies used for Starship
-RUN apk add --no-cache curl make bash jq sed
-
-WORKDIR /opt
-
-# rest server, tendermint p2p, tendermint rpc
-EXPOSE 1317 26656 26657
-
-CMD ["/usr/bin/dungeond", "version"]
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl bash jq && rm -rf /var/lib/apt/lists/* \
+ && groupadd -g 1025 dungeon && useradd -m -u 1025 -g dungeon dungeon
+COPY --from=builder /code/build/v12-release/dungeond /usr/bin/dungeond
+USER 1025:1025
+WORKDIR /home/dungeon
+EXPOSE 1317 26656 26657 9090
+CMD ["dungeond", "version"]

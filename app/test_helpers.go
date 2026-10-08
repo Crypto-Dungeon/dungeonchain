@@ -15,11 +15,11 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
-	pruningtypes "cosmossdk.io/store/pruning/types"
-	"cosmossdk.io/store/snapshots"
-	snapshottypes "cosmossdk.io/store/snapshots/types"
+	pruningtypes "github.com/cosmos/cosmos-sdk/store/v2/pruning/types"
+	"github.com/cosmos/cosmos-sdk/store/v2/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/store/v2/snapshots/types"
 
 	bam "github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -63,6 +63,11 @@ func setup(
 	invCheckPeriod uint,
 	wasmOpts ...wasmkeeper.Option,
 ) (*ChainApp, GenesisState) {
+	return setupWithAppOptions(t, chainID, withGenesis, invCheckPeriod, nil, wasmOpts...)
+}
+
+func setupWithAppOptions(t testing.TB, chainID string, withGenesis bool, invCheckPeriod uint,
+	extraOpts simtestutil.AppOptionsMap, wasmOpts ...wasmkeeper.Option) (*ChainApp, GenesisState) {
 	db := dbm.NewMemDB()
 	nodeHome := t.TempDir()
 	snapshotDir := filepath.Join(nodeHome, "data", "snapshots")
@@ -76,6 +81,9 @@ func setup(
 	appOptions := make(simtestutil.AppOptionsMap, 0)
 	appOptions[flags.FlagHome] = nodeHome // ensure unique folder
 	appOptions[server.FlagInvCheckPeriod] = invCheckPeriod
+	for key, value := range extraOpts {
+		appOptions[key] = value
+	}
 	app := NewChainApp(
 		log.NewNopLogger(),
 		db,
@@ -187,10 +195,16 @@ func SetupWithGenesisValSet(
 	wasmOpts []wasmkeeper.Option,
 	balances ...banktypes.Balance,
 ) *ChainApp {
+	return SetupWithGenesisValSetAndOptions(t, valSet, genAccs, chainID, wasmOpts, nil, balances...)
+}
+
+func SetupWithGenesisValSetAndOptions(t *testing.T, valSet *cmttypes.ValidatorSet,
+	genAccs []authtypes.GenesisAccount, chainID string, wasmOpts []wasmkeeper.Option,
+	options simtestutil.AppOptionsMap, balances ...banktypes.Balance) *ChainApp {
 	t.Helper()
 
-	app, genesisState := setup(
-		t, chainID, true, 5,
+	app, genesisState := setupWithAppOptions(
+		t, chainID, true, 5, options,
 		wasmOpts...,
 	)
 	genesisState, err := GenesisStateWithValSet(app.AppCodec(), genesisState, valSet, genAccs, balances...)

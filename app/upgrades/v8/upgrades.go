@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 	hyperlane "github.com/bcp-innovations/hyperlane-cosmos/x/core"

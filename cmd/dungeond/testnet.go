@@ -490,7 +490,9 @@ func collectGenFiles(
 		genFile := nodeConfig.GenesisFile()
 
 		// overwrite each validator's genesis file to have a canonical genesis time
-		if err := genutil.ExportGenesisFileWithTime(genFile, chainID, nil, appState, genTime); err != nil {
+		appGenesis.ChainID = chainID
+		appGenesis.AppState = appState
+		if err := genutil.ExportGenesisFileWithTime(genFile, appGenesis, genTime); err != nil {
 			return err
 		}
 	}

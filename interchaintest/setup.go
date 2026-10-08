@@ -17,7 +17,6 @@ import (
 
 	wasm "github.com/CosmWasm/wasmd/x/wasm/types"
 	ibcconntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	ccvconsumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
 	globalfee "github.com/strangelove-ventures/globalfee/x/globalfee/types"
 	tokenfactory "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/types"
 )
@@ -102,6 +101,7 @@ var (
 		Name: "gaia", Version: ProviderVer,
 		NumValidators: &vals, NumFullNodes: &fNodes,
 		ChainConfig: ibc.ChainConfig{
+			Images: []ibc.DockerImage{ibc.NewDockerImage("gaia-interchain", ProviderVer, "1025:1025")},
 			GasAdjustment:  3.0,
 			TrustingPeriod: "504h",
 			ModifyGenesis:  cosmos.ModifyGenesis([]cosmos.GenesisKV{
@@ -118,7 +118,6 @@ func GetEncodingConfig() *moduletestutil.TestEncodingConfig {
 	wasm.RegisterInterfaces(cfg.InterfaceRegistry)
 	tokenfactory.RegisterInterfaces(cfg.InterfaceRegistry)
 	globalfee.RegisterInterfaces(cfg.InterfaceRegistry)
-	ccvconsumertypes.RegisterInterfaces(cfg.InterfaceRegistry)
 	return &cfg
 }
 

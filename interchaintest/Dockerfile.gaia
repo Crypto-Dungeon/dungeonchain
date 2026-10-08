@@ -1,0 +1,14 @@
+# Test-only classical counterparty, built from the public Gaia v15.2.0 source.
+# Avoid the retired/private heighliner image. This is not a production release.
+FROM golang:1.21-bookworm AS builder
+WORKDIR /src
+RUN curl -fsSL --retry 3 https://github.com/cosmos/gaia/archive/7281c9b9dc4e3087ee87f5b24e416802b52e8661.tar.gz | tar -xz --strip-components=1
+RUN CGO_ENABLED=0 go build -mod=readonly -trimpath -ldflags '-s -w -X github.com/cosmos/cosmos-sdk/version.Version=15.2.0' -o /gaiad ./cmd/gaiad
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates bash curl jq && rm -rf /var/lib/apt/lists/* \
+ && groupadd -g 1025 gaia && useradd -m -u 1025 -g gaia gaia
+COPY --from=builder /gaiad /usr/bin/gaiad
+USER 1025:1025
+WORKDIR /home/gaia
+CMD ["gaiad", "version"]

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"

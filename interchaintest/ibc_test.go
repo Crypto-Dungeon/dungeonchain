@@ -53,9 +53,9 @@ func TestIBCBasic(t *testing.T) {
 		AddChain(chainB).
 		AddRelayer(r, "relayer")
 
-	ic = ic.AddProviderConsumerLink(interchaintest.ProviderConsumerLink{
-		Consumer: chainA,
-		Provider: chainB,
+	ic = ic.AddLink(interchaintest.InterchainLink{
+		Chain2: chainA,
+		Chain1: chainB,
 		Relayer:  r,
 		Path:     ibcPath,
 	})
@@ -67,8 +67,6 @@ func TestIBCBasic(t *testing.T) {
 		NetworkID:        network,
 		SkipPathCreation: false,
 	}))
-
-	require.NoError(t, chainB.FinishICSProviderSetup(ctx, r, eRep, ibcPath))
 
 	// Create and Fund User Wallets
 	fundAmount := math.NewInt(10_000_000)
