@@ -245,6 +245,8 @@ var (
 // ChainApp extended ABCI application
 type ChainApp struct {
 	*baseapp.BaseApp
+	closeOnce         sync.Once
+	closeErr          error
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
 	txConfig          client.TxConfig
@@ -1307,6 +1309,13 @@ func (app *ChainApp) LoadHeight(height int64) error {
 // for modules to register their own custom testing types.
 func (app *ChainApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
+}
+
+// Close tolerates both CometBFT shutdown and the SDK server's cleanup hook.
+// Closing the underlying Pebble database twice panics.
+func (app *ChainApp) Close() error {
+	app.closeOnce.Do(func() { app.closeErr = app.BaseApp.Close() })
+	return app.closeErr
 }
 
 // AppCodec returns app codec.
