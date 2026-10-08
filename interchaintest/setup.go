@@ -101,6 +101,7 @@ var (
 		Name: "gaia", Version: ProviderVer,
 		NumValidators: &vals, NumFullNodes: &fNodes,
 		ChainConfig: ibc.ChainConfig{
+			Images: []ibc.DockerImage{ibc.NewDockerImage("gaia-interchain", ProviderVer, "1025:1025")},
 			GasAdjustment:  3.0,
 			TrustingPeriod: "504h",
 			ModifyGenesis:  cosmos.ModifyGenesis([]cosmos.GenesisKV{
