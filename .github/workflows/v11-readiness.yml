@@ -1,0 +1,66 @@
+name: v11 compatibility rehearsal
+on:
+  pull_request:
+    branches: [upgrade/v10]
+  push:
+    branches: [codex/dungeon-quantum-readiness-v11]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: v11-rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+      - name: Test all packages and counterparty verification
+        run: go test -mod=readonly -count=1 -tags pebbledb ./...
+
+  upgrade:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [goleveldb, pebbledb]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+      - name: Install static linker
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Build exact live source and static candidate
+        run: |
+          mkdir -p "$RUNNER_TEMP/baseline"
+          test "$(git rev-parse v10.0.0^{commit})" = 281010e4445cd2f478ed39b397926ce221e22c06
+          git archive v10.0.0 | tar -x -C "$RUNNER_TEMP/baseline"
+          (cd "$RUNNER_TEMP/baseline" && go build -tags pebbledb -o "$RUNNER_TEMP/dungeond-v10" ./cmd/dungeond)
+          bash scripts/build_v11_release.sh
+      - name: Rehearse governance upgrade and module transactions
+        env:
+          DB_BACKEND: ${{ matrix.database }}
+        run: |
+          export BINARY_V10="$RUNNER_TEMP/dungeond-v10"
+          export BINARY_V11="$PWD/build/v11-release/dungeond"
+          export CW20_WASM="$(go env GOMODCACHE)/github.com/!cosm!wasm/wasmd@v0.60.9/benchmarks/testdata/cw20_base.wasm"
+          export TMPDIR="$RUNNER_TEMP"
+          bash scripts/test_v11_upgrade.sh
+      - name: Save rehearsal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v11-rehearsal-${{ matrix.database }}
+          path: |
+            ${{ runner.temp }}/dungeon-v11-rehearsal.*/test-logs/
+            build/v11-release/*txt
+            build/v11-release/SHA256SUMS
