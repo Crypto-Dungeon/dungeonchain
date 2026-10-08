@@ -53,7 +53,7 @@ jobs:
           DB_BACKEND: ${{ matrix.database }}
         run: |
           export BINARY_V10="$RUNNER_TEMP/dungeond-v10"
-          export BINARY_V11="$PWD/build/v12-release/dungeond"
+          export BINARY_V12="$PWD/build/v12-release/dungeond"
           export CW20_WASM="$(go env GOMODCACHE)/github.com/!cosm!wasm/wasmd@v0.60.9/benchmarks/testdata/cw20_base.wasm"
           export TMPDIR="$RUNNER_TEMP"
           bash scripts/test_v12_upgrade.sh
