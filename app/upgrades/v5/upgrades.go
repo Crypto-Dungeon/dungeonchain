@@ -2,9 +2,9 @@ package v5
 
 import (
 	"context"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
 func CreateUpgradeHandler(

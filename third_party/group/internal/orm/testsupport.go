@@ -1,0 +1,106 @@
+package orm
+
+import (
+	"fmt"
+
+	dbm "github.com/cosmos/cosmos-db"
+
+	"cosmossdk.io/log/v2"
+	"github.com/cosmos/cosmos-sdk/store/v2"
+	"github.com/cosmos/cosmos-sdk/store/v2/gaskv"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
+)
+
+type MockContext struct {
+	db      *dbm.MemDB
+	store   storetypes.CommitMultiStore
+	mounted map[storetypes.StoreKey]bool
+}
+
+func NewMockContext() *MockContext {
+	db := dbm.NewMemDB()
+	return &MockContext{
+		db:      db,
+		mounted: make(map[storetypes.StoreKey]bool),
+		store:   store.NewCommitMultiStore(db, log.NewNopLogger()),
+	}
+}
+
+func (m MockContext) KVStore(key storetypes.StoreKey) storetypes.KVStore {
+	if m.mounted[key] {
+		return m.store.GetKVStore(key)
+	}
+	m.store.MountStoreWithDB(key, storetypes.StoreTypeIAVL, m.db)
+	m.mounted[key] = true
+	if err := m.store.LoadLatestVersion(); err != nil {
+		panic(err)
+	}
+	return m.store.GetKVStore(key)
+}
+
+type debuggingGasMeter struct {
+	g storetypes.GasMeter
+}
+
+func (d debuggingGasMeter) GasConsumed() storetypes.Gas {
+	return d.g.GasConsumed()
+}
+
+func (d debuggingGasMeter) GasRemaining() storetypes.Gas {
+	return d.g.GasRemaining()
+}
+
+func (d debuggingGasMeter) GasConsumedToLimit() storetypes.Gas {
+	return d.g.GasConsumedToLimit()
+}
+
+func (d debuggingGasMeter) RefundGas(amount uint64, descriptor string) {
+	d.g.RefundGas(amount, descriptor)
+}
+
+func (d debuggingGasMeter) Limit() storetypes.Gas {
+	return d.g.Limit()
+}
+
+func (d debuggingGasMeter) ConsumeGas(amount storetypes.Gas, descriptor string) {
+	fmt.Printf("++ Consuming gas: %q :%d\n", descriptor, amount)
+	d.g.ConsumeGas(amount, descriptor)
+}
+
+func (d debuggingGasMeter) IsPastLimit() bool {
+	return d.g.IsPastLimit()
+}
+
+func (d debuggingGasMeter) IsOutOfGas() bool {
+	return d.g.IsOutOfGas()
+}
+
+func (d debuggingGasMeter) String() string {
+	return d.g.String()
+}
+
+type GasCountingMockContext struct {
+	GasMeter storetypes.GasMeter
+}
+
+func NewGasCountingMockContext() *GasCountingMockContext {
+	return &GasCountingMockContext{
+		GasMeter: &debuggingGasMeter{storetypes.NewInfiniteGasMeter()},
+	}
+}
+
+func (g GasCountingMockContext) KVStore(store storetypes.KVStore) storetypes.KVStore {
+	return gaskv.NewStore(store, g.GasMeter, storetypes.KVGasConfig())
+}
+
+func (g GasCountingMockContext) GasConsumed() storetypes.Gas {
+	return g.GasMeter.GasConsumed()
+}
+
+func (g GasCountingMockContext) GasRemaining() storetypes.Gas {
+	return g.GasMeter.GasRemaining()
+}
+
+func (g *GasCountingMockContext) ResetGasMeter() {
+	g.GasMeter = storetypes.NewInfiniteGasMeter()
+}

@@ -1,8 +1,8 @@
 package v4
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

@@ -47,9 +47,9 @@ func TestTokenFactory(t *testing.T) {
 	ic = ic.
 		AddChain(provider).
 		AddRelayer(r, "relayer").
-		AddProviderConsumerLink(interchaintest.ProviderConsumerLink{
-			Consumer: chain,
-			Provider: provider,
+		AddLink(interchaintest.InterchainLink{
+			Chain2: chain,
+			Chain1: provider,
 			Relayer:  r,
 			Path:     ibcPath,
 		})
@@ -60,8 +60,6 @@ func TestTokenFactory(t *testing.T) {
 		NetworkID:        network,
 		SkipPathCreation: false,
 	}))
-
-	require.NoError(t, provider.FinishICSProviderSetup(ctx, r, eRep, ibcPath))
 
 	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", GenesisFundsAmount, chain, chain)
 	user := users[0]

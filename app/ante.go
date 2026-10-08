@@ -4,12 +4,12 @@ import (
 	"errors"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/decorators"
-	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
-	"github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	ibcante "github.com/cosmos/ibc-go/v11/modules/core/ante"
+	"github.com/cosmos/ibc-go/v11/modules/core/keeper"
 
 	corestoretypes "cosmossdk.io/core/store"
-	circuitante "cosmossdk.io/x/circuit/ante"
-	circuitkeeper "cosmossdk.io/x/circuit/keeper"
+	circuitante "github.com/cosmos/cosmos-sdk/contrib/x/circuit/ante"
+	circuitkeeper "github.com/cosmos/cosmos-sdk/contrib/x/circuit/keeper"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"

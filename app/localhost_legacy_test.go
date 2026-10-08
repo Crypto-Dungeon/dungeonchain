@@ -6,9 +6,9 @@ import (
 	"time"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	clientkeeper "github.com/cosmos/ibc-go/v10/modules/core/02-client/keeper"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	clientkeeper "github.com/cosmos/ibc-go/v11/modules/core/02-client/keeper"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v11/modules/core/exported"
 	"github.com/stretchr/testify/require"
 )
 

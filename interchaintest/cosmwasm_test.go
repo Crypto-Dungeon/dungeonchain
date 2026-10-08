@@ -55,9 +55,9 @@ func TestCosmWasmIntegration(t *testing.T) {
 
 	ic = ic.AddChain(provider).
 		AddRelayer(r, "relayer").
-		AddProviderConsumerLink(interchaintest.ProviderConsumerLink{
-			Provider: provider,
-			Consumer: chain,
+		AddLink(interchaintest.InterchainLink{
+			Chain1: provider,
+			Chain2: chain,
 			Relayer:  r,
 			Path:     ibcPath,
 		})
@@ -71,8 +71,6 @@ func TestCosmWasmIntegration(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ic.Close()
 	})
-
-	require.NoError(t, provider.FinishICSProviderSetup(ctx, r, eRep, ibcPath))
 
 	users := interchaintest.GetAndFundTestUsers(t, ctx, t.Name(), GenesisFundsAmount, chain)
 	user := users[0]

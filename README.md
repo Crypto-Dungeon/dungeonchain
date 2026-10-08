@@ -1,3 +1,7 @@
+> This branch contains the **v12 full Cosmos SDK55 upgrade candidate**. See
+> [migration, validation and activation gates](docs/upgrades/v12.md). Production
+> activation requires coordinated governance and validator/IBC preparation.
+
 # Dungeon Chain
 
 ## Content Generation

@@ -3,7 +3,7 @@ package v7
 import (
 	"context"
 
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 	sdk "github.com/cosmos/cosmos-sdk/types"

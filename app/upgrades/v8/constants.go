@@ -1,7 +1,7 @@
 package v8
 
 import (
-	storetypes "cosmossdk.io/store/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 	hyperlanetypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"

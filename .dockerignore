@@ -1,0 +1,6 @@
+.git
+build
+dist
+**/node_modules
+**/.env
+**/.env.*
