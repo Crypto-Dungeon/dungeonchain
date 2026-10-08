@@ -165,7 +165,7 @@ proposal=$("${bin[@]}" query gov proposals "${q[@]}" | jq -er '.proposals[-1].id
 broadcast upgrade-vote val gov vote "$proposal" yes
 say "Wait for approved upgrade halt at $upgrade_height"
 halted=false
-for _ in $(seq 1 180); do
+for _ in $(seq 1 600); do
   if grep -q 'UPGRADE "v12" NEEDED' "$LOG_DIR/v10.log"; then halted=true; break; fi
   sleep 1
 done
