@@ -30,6 +30,10 @@ parameters are removed. The `v11` handler runs the module migration manager with
 no store additions or deletions. It does not enable ML-DSA for Dungeon consensus.
 The existing `upgrade/v10` Makefile fix keeps the `pebbledb` tag in all ordinary
 builds, required by srv11's current database configuration.
+Sonic, an indirect JSON dependency, is updated to 1.15.4 with loader 0.5.2 so
+the candidate can build on the supported Go 1.27.1 toolchain. The exact v10
+baseline is built with Go 1.25.14 because its older Sonic version cannot compile
+with Go 1.27.
 
 ## Build and validation
 

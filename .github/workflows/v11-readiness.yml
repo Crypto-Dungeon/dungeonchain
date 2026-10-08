@@ -44,7 +44,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/baseline"
           test "$(git rev-parse v10.0.0^{commit})" = 281010e4445cd2f478ed39b397926ce221e22c06
           git archive v10.0.0 | tar -x -C "$RUNNER_TEMP/baseline"
-          (cd "$RUNNER_TEMP/baseline" && go build -tags pebbledb -o "$RUNNER_TEMP/dungeond-v10" ./cmd/dungeond)
+          (cd "$RUNNER_TEMP/baseline" && GOTOOLCHAIN=go1.25.14 go build -tags pebbledb -o "$RUNNER_TEMP/dungeond-v10" ./cmd/dungeond)
           bash scripts/build_v11_release.sh
       - name: Rehearse governance upgrade and module transactions
         env:
