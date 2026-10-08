@@ -37,7 +37,7 @@ with Go 1.27.
 
 ## Build and validation
 
-On Linux amd64 with Go 1.27.1, GCC and musl-tools:
+On Linux amd64 with Go 1.27.1, GCC and musl-tools (Ubuntu: install gcc-11 too):
 
 ```bash
 go test -mod=readonly -count=1 -tags pebbledb ./...
@@ -56,6 +56,16 @@ commit before staging it for an upgrade.
 client route, including the protobuf header encoding. It checks valid Ed25519
 and ML-DSA-65 signed headers, rejects a forged commit, verifies that client state
 advances, and checks that Dungeon's consensus key allowance remains Ed25519.
+
+The candidate also restores decoding of historical localhost-client records.
+The live `ibc client states` query failed on this type during the read-only
+inspection. `TestLegacyLocalhostClientQuery` inserts the actual public encoded
+mainnet record into an isolated store and checks the client-list query, JSON
+output and preserved height without rewriting it. This decoder does not register
+a localhost light-client route or allow users to create localhost clients.
+The codec-only implementation is adapted from existing
+[Dungeon PR #27](https://github.com/Crypto-Dungeon/dungeonchain/pull/27), rebased
+onto the actual v10 release rather than the stale `main` branch.
 
 The rehearsal uses a fresh private scratch home and newly generated local keys.
 It stops only its own child node. It does not erase an existing home, kill a

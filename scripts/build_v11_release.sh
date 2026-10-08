@@ -8,6 +8,9 @@ OUT_DIR=${OUT_DIR:-build/v11-release}
   echo 'Run this builder on Linux amd64' >&2; exit 1;
 }
 command -v musl-gcc >/dev/null || { echo 'Install musl-tools' >&2; exit 1; }
+# Ubuntu GCC 12+ libgcc unwinding depends on glibc's _dl_find_object. GCC 11
+# supplies a musl-compatible unwinder without a shim or weakened linker check.
+if [[ -z "${REALGCC:-}" ]] && command -v gcc-11 >/dev/null; then export REALGCC=gcc-11; fi
 [[ "$(go list -m -f '{{.Version}}' github.com/cometbft/cometbft)" == v0.38.26 ]]
 [[ "$(go list -m -f '{{.Version}}' github.com/CosmWasm/wasmvm/v2)" == v2.3.5 ]]
 commit=$(git rev-parse HEAD)
