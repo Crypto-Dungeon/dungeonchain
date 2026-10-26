@@ -145,4 +145,5 @@ func TestV13ForkOnMainnetState(t *testing.T) {
 		require.Equal(t, newKeys[r.Validator], v.ConsensusPubkey.GetCachedValue().(cryptotypes.PubKey).Bytes(), "%s stored key", r.Validator)
 		require.False(t, v.IsJailed())
 	}
+	assertV13DRAGUURecovery(t, a, ctx.WithBlockHeight(v13.ForkHeight+3).WithBlockTime(start.Add(18*time.Second)))
 }

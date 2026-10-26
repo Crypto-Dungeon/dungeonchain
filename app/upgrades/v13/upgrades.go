@@ -13,6 +13,17 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
+// DAORecoveries are the consensus-time contract recoveries. Tests without a
+// wasm keeper replace this list, just as they replace RoleTransfers/Rotations.
+var DAORecoveries = []func(context.Context, *upgrades.AppKeepers) error{RecoverDRAGUU}
+
+func recoverDAOs(ctx context.Context, ak *upgrades.AppKeepers) error {
+	for _, recoverDAO := range DAORecoveries {
+		if err := recoverDAO(ctx, ak); err != nil { return err }
+	}
+	return nil
+}
+
 // CreateUpgradeHandler returns the v13 handler: recovery of the 2026-10-25
 // hot-wallet theft. It is a pure state correction, no module migrations and no
 // dependency changes:
@@ -31,6 +42,8 @@ import (
 //     the thief sign (decorators/frozen.go).
 //  6. Contract roles still held by the hot wallet (cw721 minter-owners, CLOB
 //     admins) move to RecoveryAddress (contracts.go).
+//  7. DRAGUU bootstrap governance moves to the clean wallet; the old proposal
+//     module is quarantined to remove historical proposal execution authority.
 //
 // Amounts are read from state at upgrade height, never hardcoded, so the
 // handler is correct whatever moves between now and the halt. It refuses to
@@ -53,6 +66,7 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 		if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
 			return nil, err
 		}
+		if err := recoverDAOs(ctx, ak); err != nil { return nil, err }
 		return mm.RunMigrations(ctx, cfg, fromVM)
 	}
 }
@@ -74,6 +88,7 @@ func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 	if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
+	if err := recoverDAOs(ctx, ak); err != nil { panic(fmt.Errorf("v13 fork: %w", err)) }
 }
 
 // Recover performs the state correction. Safe to run twice: a second run finds
