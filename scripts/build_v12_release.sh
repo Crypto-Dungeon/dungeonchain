@@ -41,8 +41,8 @@ go build -mod=readonly -p "${BUILD_PARALLELISM:-6}" -trimpath -tags netgo,muslc,
 file "$binary" | grep -q 'statically linked' || { echo 'Binary is not static' >&2; exit 1; }
 [[ "$("$binary" query wasm libwasmvm-version)" == 3.0.8 ]]
 "$binary" version --long > "$OUT_DIR/version.txt" 2>&1
-printf 'version=%s\nplan=v12\ncommit=%s\ngo=%s\ncometbft=0.40.0\nwasmvm=3.0.8\npost_quantum_signing_supported=true\nconsensus_activation=separate_governance_and_key_rotation\ndirty=%s\n' \
-  "$VERSION" "$commit" "$(go version)" "$([[ -n "$dirty" ]] && echo true || echo false)" > "$OUT_DIR/provenance.txt"
+printf 'version=%s\nplan=%s\ncommit=%s\ngo=%s\ncometbft=0.40.0\nwasmvm=3.0.8\npost_quantum_signing_supported=true\nconsensus_activation=separate_governance_and_key_rotation\ndirty=%s\n' \
+  "$VERSION" "${PLAN_NAME:-v12}" "$commit" "$(go version)" "$([[ -n "$dirty" ]] && echo true || echo false)" > "$OUT_DIR/provenance.txt"
 (cd "$OUT_DIR" && sha256sum dungeond version.txt provenance.txt > SHA256SUMS)
 tar -czf "$OUT_DIR/dungeonchain-$VERSION-linux-amd64.tar.gz" -C "$OUT_DIR" dungeond version.txt provenance.txt SHA256SUMS
 echo "Built static candidate: $OUT_DIR/dungeonchain-$VERSION-linux-amd64.tar.gz"
