@@ -25,6 +25,10 @@ import (
 //     RecoveryAddress as well.
 //  4. The three operator validators rotate to fresh consensus keys
 //     (rotate.go), fee paid from RecoveryAddress.
+//  5. Their operator accounts' commission, self-delegation rewards and
+//     liquid balance move to RecoveryAddress (sweep.go); from ForkHeight on
+//     the ante handler refuses every tx those accounts, the hot wallet or
+//     the thief sign (decorators/frozen.go).
 //
 // Amounts are read from state at upgrade height, never hardcoded, so the
 // handler is correct whatever moves between now and the halt. It refuses to
@@ -41,6 +45,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 		if err := RotateKeys(ctx, ak, Rotations); err != nil {
 			return nil, err
 		}
+		if err := SweepOperators(ctx, ak, Rotations); err != nil {
+			return nil, err
+		}
 		return mm.RunMigrations(ctx, cfg, fromVM)
 	}
 }
@@ -54,6 +61,9 @@ func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 	if err := RotateKeys(ctx, ak, Rotations); err != nil {
+		panic(fmt.Errorf("v13 fork: %w", err))
+	}
+	if err := SweepOperators(ctx, ak, Rotations); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 }

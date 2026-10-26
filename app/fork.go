@@ -11,6 +11,7 @@ func BeginBlockForks(ctx sdk.Context, app *ChainApp) {
 		AccountKeeper:         &app.AccountKeeper,
 		BankKeeper:            &app.BankKeeper,
 		StakingKeeper:         app.StakingKeeper,
+		DistrKeeper:           &app.DistrKeeper,
 		ParamsKeeper:          &app.ParamsKeeper,
 		UpgradeKeeper:         app.UpgradeKeeper,
 		CommitMultiStore:      app.CommitMultiStore(),

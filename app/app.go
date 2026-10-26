@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	v13 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v13"
 	paramslegacy "github.com/cosmos/cosmos-sdk/x/params/legacy"
 	"io"
 	"os"
@@ -1143,6 +1144,9 @@ func NewChainApp(
 			GlobalFeeKeeper:      app.GlobalFeeKeeper,
 			BypassMinFeeMsgTypes: GetDefaultBypassFeeMessages(),
 			ExemptAddresses:      app.FeeExemptAddresses,
+			FrozenAccounts:       mustDecodeAccounts(app.AccountKeeper.AddressCodec(), v13.FrozenAccounts()),
+			FrozenFromHeight:     v13.ForkHeight,
+			Codec:                app.appCodec,
 			// ConsumerKeeper:       app.ConsumerKeeper,
 		},
 	)

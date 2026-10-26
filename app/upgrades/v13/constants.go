@@ -26,6 +26,20 @@ const (
 	RecoveryAddress = "dungeon10cr0mweqjyz856kyyy03yzj6av3vmy0p0653lh"
 )
 
+// OperatorAccounts are the account keys of the three operator validators
+// (Rotations). All three were read by the intruder on 2026-10-25.
+var OperatorAccounts = []string{
+	"dungeon1pkr96cu09pzug2m2w2h97u5snpq3spsc5pdhwk", // The Hive
+	"dungeon1aj5jlmvqp8dd26rsec6624szthlazdn2vhxak9", // CryptoDungeon
+	"dungeon19qp6fk7lj4y36djnwkvpv4j7pv8x3epcef798e", // House of the Holy
+}
+
+// FrozenAccounts can sign nothing from ForkHeight on (decorators.FrozenSignerDecorator):
+// every key the intruder holds that controls dungeon-1 funds or validators.
+func FrozenAccounts() []string {
+	return append([]string{CompromisedHotWallet, ThiefAddress}, OperatorAccounts...)
+}
+
 // ForkHeight is the block at which the governance-free path runs Recover.
 // 0 = disabled (BeginBlockForks never matches height 0). Set it to the agreed
 // restart height before building the binary validators will run; every

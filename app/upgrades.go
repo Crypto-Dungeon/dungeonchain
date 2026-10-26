@@ -43,6 +43,7 @@ func (app *ChainApp) RegisterUpgradeHandlers() {
 		HyperlaneKeeper:       app.HyperlaneKeeper,
 		WarpKeeper:            &app.WarpKeeper,
 		StakingKeeper:         app.StakingKeeper,
+		DistrKeeper:           &app.DistrKeeper,
 	}
 	app.GetStoreKeys()
 	// register all upgrade handlers

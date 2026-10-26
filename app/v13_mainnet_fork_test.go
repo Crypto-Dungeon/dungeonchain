@@ -16,6 +16,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 
 	v13 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v13"
@@ -60,6 +61,10 @@ func TestV13ForkOnMainnetState(t *testing.T) {
 		}
 	}
 	recBefore := a.BankKeeper.GetBalance(ctx, recovery, denom).Amount
+	opHeld := math.ZeroInt() // liquid DGN of the operator accounts; commission comes on top
+	for _, o := range v13.OperatorAccounts {
+		opHeld = opHeld.Add(a.BankKeeper.GetBalance(ctx, addr(o), denom).Amount)
+	}
 	t.Logf("before: thief %s udgn, hot unbonding %s udgn in %d delegations, recovery %s udgn", thiefBefore, unbonding, len(ubds), recBefore)
 	require.True(t, thiefBefore.IsPositive(), "thief should still hold the stolen DGN")
 
@@ -101,7 +106,17 @@ func TestV13ForkOnMainnetState(t *testing.T) {
 			fees := math.NewInt(3_000_000)
 			got := a.BankKeeper.GetBalance(bctx, recovery, denom).Amount.Sub(recBefore)
 			// thief + unbonding + hot dust, minus the three rotation fees
-			require.True(t, got.GTE(thiefBefore.Add(unbonding).Sub(fees)), "recovery got %s", got)
+			require.True(t, got.GTE(thiefBefore.Add(unbonding).Add(opHeld).Sub(fees)), "recovery got %s", got)
+			for _, o := range v13.OperatorAccounts {
+				require.True(t, a.BankKeeper.GetAllBalances(bctx, addr(o)).IsZero(), "operator %s emptied", o)
+			}
+			for _, f := range v13.FrozenAccounts() {
+				b := a.TxConfig().NewTxBuilder()
+				require.NoError(t, b.SetMsgs(banktypes.NewMsgSend(addr(f), recovery, sdk.NewCoins(sdk.NewInt64Coin(denom, 1)))))
+				b.SetGasLimit(200_000)
+				_, err := a.AnteHandler()(bctx, b.GetTx(), false)
+				require.ErrorContains(t, err, "frozen", f)
+			}
 			t.Logf("recovery gained %s udgn", got)
 		}
 	}

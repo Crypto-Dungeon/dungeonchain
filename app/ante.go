@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/Crypto-Dungeon/dungeonchain/app/decorators"
+	"github.com/cosmos/cosmos-sdk/codec"
 	ibcante "github.com/cosmos/ibc-go/v11/modules/core/ante"
 	"github.com/cosmos/ibc-go/v11/modules/core/keeper"
 
@@ -37,6 +38,11 @@ type HandlerOptions struct {
 	// ExemptAddresses is the list of bech32 addresses that pay zero fees.
 	// Populated from the v6 upgrade params; defaults to empty at genesis.
 	ExemptAddresses []string
+
+	// FrozenAccounts sign nothing from FrozenFromHeight on (v13).
+	FrozenAccounts   [][]byte
+	FrozenFromHeight int64
+	Codec            codec.Codec
 }
 
 // NewAnteHandler constructor
@@ -58,6 +64,9 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	}
 	if options.CircuitKeeper == nil {
 		return nil, errors.New("circuit keeper is required for ante builder")
+	}
+	if len(options.FrozenAccounts) > 0 && options.Codec == nil {
+		return nil, errors.New("codec is required to check frozen accounts")
 	}
 
 	// postFeeDecorators is everything that runs AFTER fee checking.
@@ -84,6 +93,8 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		wasmkeeper.NewCountTXDecorator(options.TXCounterStoreService),
 		wasmkeeper.NewGasRegisterDecorator(options.WasmKeeper.GetGasRegister()),
 		circuitante.NewCircuitBreakerDecorator(options.CircuitKeeper),
+		// v13: refuse txs from stolen keys before any signature or fee work.
+		decorators.NewFrozenSignerDecorator(options.Codec, options.FrozenAccounts, options.FrozenFromHeight),
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
