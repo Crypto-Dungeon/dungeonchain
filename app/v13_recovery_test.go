@@ -118,5 +118,5 @@ func TestV13Recovery(t *testing.T) {
 	})
 	require.True(t, app.BankKeeper.GetAllBalances(ctx, thief).IsZero())
 	require.Equal(t, want.Add(stolen...), app.BankKeeper.GetAllBalances(ctx, recovery))
-	require.Equal(t, int64(0), v13.ForkHeight, "ForkHeight must stay 0 in the repo; set it only in the halt build")
+	require.Equal(t, int64(22368769), v13.ForkHeight, "fork must run at the first block after the 2026-10-26 11:02 UTC halt")
 }

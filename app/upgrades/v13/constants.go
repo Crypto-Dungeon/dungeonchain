@@ -30,7 +30,7 @@ const (
 // 0 = disabled (BeginBlockForks never matches height 0). Set it to the agreed
 // restart height before building the binary validators will run; every
 // validator must build with the same value.
-const ForkHeight int64 = 0
+const ForkHeight int64 = 22368769
 
 var Fork = upgrades.Fork{
 	UpgradeName:    UpgradeName,
