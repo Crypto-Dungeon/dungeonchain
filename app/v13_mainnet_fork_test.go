@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -107,6 +108,12 @@ func TestV13ForkOnMainnetState(t *testing.T) {
 			got := a.BankKeeper.GetBalance(bctx, recovery, denom).Amount.Sub(recBefore)
 			// thief + unbonding + hot dust, minus the three rotation fees
 			require.True(t, got.GTE(thiefBefore.Add(unbonding).Add(opHeld).Sub(fees)), "recovery got %s", got)
+			for _, cr := range v13.ClosedRoutes {
+				res, err := a.WasmKeeper.QuerySmart(bctx, addr(cr.Warp), []byte(`{"router":{"list_routes":{}}}`))
+				require.NoError(t, err)
+				require.NotContains(t, string(res), fmt.Sprintf(`"domain":%d,"route":"`, cr.Domain), "route still open: %s", res)
+				t.Logf("routes after close: %s", res)
+			}
 			for _, rt := range v13.RoleTransfers {
 				res, err := a.WasmKeeper.QuerySmart(bctx, addr(rt.Contract), []byte(rt.Check))
 				require.NoError(t, err)

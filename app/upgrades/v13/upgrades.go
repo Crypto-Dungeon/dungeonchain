@@ -31,6 +31,7 @@ import (
 //     the thief sign (decorators/frozen.go).
 //  6. Contract roles still held by the hot wallet (cw721 minter-owners, CLOB
 //     admins) move to RecoveryAddress (contracts.go).
+//  7. The DGN warp route to Base is closed until it has new keys (bridge.go).
 //
 // Amounts are read from state at upgrade height, never hardcoded, so the
 // handler is correct whatever moves between now and the halt. It refuses to
@@ -53,6 +54,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 		if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
 			return nil, err
 		}
+		if err := CloseBridgeRoutes(ctx, ak); err != nil {
+			return nil, err
+		}
 		return mm.RunMigrations(ctx, cfg, fromVM)
 	}
 }
@@ -72,6 +76,9 @@ func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 	if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
+		panic(fmt.Errorf("v13 fork: %w", err))
+	}
+	if err := CloseBridgeRoutes(ctx, ak); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 }

@@ -48,6 +48,9 @@ func TestV13Recovery(t *testing.T) {
 	v13.Rotations = nil
 	savedRoles := v13.RoleTransfers
 	v13.RoleTransfers = nil // no wasm contracts in the test app; the mainnet test covers them
+	savedRoutes := v13.ClosedRoutes
+	v13.ClosedRoutes = nil
+	t.Cleanup(func() { v13.ClosedRoutes = savedRoutes })
 	t.Cleanup(func() { v13.Rotations = saved; v13.RoleTransfers = savedRoles })
 	app := Setup(t)
 	ctx := app.NewContextLegacy(false, cmtproto.Header{Height: 2, Time: time.Now().UTC()})
