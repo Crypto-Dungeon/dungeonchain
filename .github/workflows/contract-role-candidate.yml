@@ -1,0 +1,52 @@
+name: Contract role recovery candidate
+
+on:
+  push:
+    branches: [recovery/remaining-contract-roles-20261026]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contract-role-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOMAXPROCS: '2'
+      BUILD_PARALLELISM: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+      - name: Install release compiler in the disposable runner
+        run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-11 file curl
+      - name: Test recovery and app code
+        run: go test -p 2 -tags pebbledb ./app/... -count=1 -v > "$RUNNER_TEMP/contract-role-tests.txt" 2>&1
+      - name: Verify source and build candidate without publishing
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+          VERSION=13.0.2-rc.1 PLAN_NAME=v13-contract-roles OUT_DIR="$RUNNER_TEMP/contract-role-candidate" bash scripts/build_v12_release.sh
+          cd "$RUNNER_TEMP/contract-role-candidate"
+          sha256sum dungeonchain-13.0.2-rc.1-linux-amd64.tar.gz > CANDIDATE-SHA256SUMS
+      - name: Upload review-only candidate and test evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-role-candidate-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/contract-role-candidate/dungeonchain-13.0.2-rc.1-linux-amd64.tar.gz
+            ${{ runner.temp }}/contract-role-candidate/SHA256SUMS
+            ${{ runner.temp }}/contract-role-candidate/CANDIDATE-SHA256SUMS
+            ${{ runner.temp }}/contract-role-candidate/version.txt
+            ${{ runner.temp }}/contract-role-candidate/provenance.txt
+            ${{ runner.temp }}/contract-role-tests.txt
