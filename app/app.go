@@ -1119,7 +1119,9 @@ func NewChainApp(
 	// v6: initialize fee-exempt addresses BEFORE building the ante handler.
 	// These must be set before NewAnteHandler is called or ExemptAddresses will be nil.
 	app.FeeExemptAddresses = []string{
-		"dungeon13x4pynlp86prhcmtns742kgsgu7pjtzj72eycc", // admin / treasury
+		// v13 (2026-10-26): the old admin key was stolen on 2026-10-25; the exemption
+		// moves to the operator's new admin key so the thief pays fees like everyone else.
+		"dungeon10cr0mweqjyz856kyyy03yzj6av3vmy0p0653lh", // admin / treasury (rotated 2026-10-26)
 		"dungeon1dflpa6dnpkn5ft4tyzkpwdhvz6l7wng06qn665", // btc-relayer (Phase A 2026-05-09)
 	}
 
