@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -27,6 +28,7 @@ import (
 
 type AppKeepers struct {
 	AccountKeeper         *authkeeper.AccountKeeper
+	AuthzKeeper           *authzkeeper.Keeper
 	BankKeeper            *bankkeeper.BaseKeeper
 	ParamsKeeper          *paramskeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper

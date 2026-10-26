@@ -43,6 +43,7 @@ type HandlerOptions struct {
 	FrozenAccounts   [][]byte
 	FrozenFromHeight int64
 	Codec            codec.Codec
+	OperatorRecovery *decorators.FrozenOperatorRecovery
 }
 
 // NewAnteHandler constructor
@@ -67,6 +68,14 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	}
 	if len(options.FrozenAccounts) > 0 && options.Codec == nil {
 		return nil, errors.New("codec is required to check frozen accounts")
+	}
+	frozen := decorators.NewFrozenSignerDecorator(options.Codec, options.FrozenAccounts, options.FrozenFromHeight)
+	if options.OperatorRecovery != nil {
+		var err error
+		frozen, err = frozen.WithOperatorRecovery(*options.OperatorRecovery)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// postFeeDecorators is everything that runs AFTER fee checking.
@@ -94,7 +103,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		wasmkeeper.NewGasRegisterDecorator(options.WasmKeeper.GetGasRegister()),
 		circuitante.NewCircuitBreakerDecorator(options.CircuitKeeper),
 		// v13: refuse txs from stolen keys before any signature or fee work.
-		decorators.NewFrozenSignerDecorator(options.Codec, options.FrozenAccounts, options.FrozenFromHeight),
+		frozen,
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
