@@ -13,6 +13,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -48,6 +49,9 @@ type AppKeepers struct {
 
 	// DistrKeeper is used by v13 to withdraw the frozen operators' commission.
 	DistrKeeper *distrkeeper.Keeper
+
+	// WasmKeeper is used by v13 to move contract roles off the stolen key.
+	WasmKeeper *wasmkeeper.Keeper
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)

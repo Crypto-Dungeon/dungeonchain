@@ -46,7 +46,9 @@ func TestV13Recovery(t *testing.T) {
 	// mainnet validators do not exist in the test app; TestV13RotateKeys covers rotation
 	saved := v13.Rotations
 	v13.Rotations = nil
-	t.Cleanup(func() { v13.Rotations = saved })
+	savedRoles := v13.RoleTransfers
+	v13.RoleTransfers = nil // no wasm contracts in the test app; the mainnet test covers them
+	t.Cleanup(func() { v13.Rotations = saved; v13.RoleTransfers = savedRoles })
 	app := Setup(t)
 	ctx := app.NewContextLegacy(false, cmtproto.Header{Height: 2, Time: time.Now().UTC()})
 	denom, err := app.StakingKeeper.BondDenom(ctx)

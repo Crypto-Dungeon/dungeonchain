@@ -44,6 +44,7 @@ func (app *ChainApp) RegisterUpgradeHandlers() {
 		WarpKeeper:            &app.WarpKeeper,
 		StakingKeeper:         app.StakingKeeper,
 		DistrKeeper:           &app.DistrKeeper,
+		WasmKeeper:            &app.WasmKeeper,
 	}
 	app.GetStoreKeys()
 	// register all upgrade handlers

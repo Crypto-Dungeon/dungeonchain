@@ -107,6 +107,13 @@ func TestV13ForkOnMainnetState(t *testing.T) {
 			got := a.BankKeeper.GetBalance(bctx, recovery, denom).Amount.Sub(recBefore)
 			// thief + unbonding + hot dust, minus the three rotation fees
 			require.True(t, got.GTE(thiefBefore.Add(unbonding).Add(opHeld).Sub(fees)), "recovery got %s", got)
+			for _, rt := range v13.RoleTransfers {
+				res, err := a.WasmKeeper.QuerySmart(bctx, addr(rt.Contract), []byte(rt.Check))
+				require.NoError(t, err)
+				for _, f := range rt.Fields {
+					require.Contains(t, string(res), `"`+f+`":"`+v13.RecoveryAddress+`"`, rt.Contract)
+				}
+			}
 			for _, o := range v13.OperatorAccounts {
 				require.True(t, a.BankKeeper.GetAllBalances(bctx, addr(o)).IsZero(), "operator %s emptied", o)
 			}
