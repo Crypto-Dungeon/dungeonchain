@@ -50,12 +50,15 @@ func TestV13Recovery(t *testing.T) {
 	v13.RoleTransfers = nil // no wasm contracts in the test app; the mainnet test covers them
 	savedRoutes := v13.ClosedRoutes
 	v13.ClosedRoutes = nil
+	savedISMs := v13.PausedISMs
+	v13.PausedISMs = nil
 	savedDAOs := v13.DAORecoveries
 	v13.DAORecoveries = nil
 	t.Cleanup(func() {
 		v13.Rotations = saved
 		v13.RoleTransfers = savedRoles
 		v13.ClosedRoutes = savedRoutes
+		v13.PausedISMs = savedISMs
 		v13.DAORecoveries = savedDAOs
 	})
 	app := Setup(t)

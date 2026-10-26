@@ -47,6 +47,7 @@ func recoverDAOs(ctx context.Context, ak *upgrades.AppKeepers) error {
 //  7. DRAGUU bootstrap governance moves to the clean wallet; the old proposal
 //     module is quarantined to remove historical proposal execution authority.
 //  8. The DGN warp route to Base is closed until it has new keys (bridge.go).
+//  9. All inbound Hyperlane messages are paused at the default ISM (bridge.go).
 //
 // Amounts are read from state at upgrade height, never hardcoded, so the
 // handler is correct whatever moves between now and the halt. It refuses to
@@ -75,6 +76,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 		if err := CloseBridgeRoutes(ctx, ak); err != nil {
 			return nil, err
 		}
+		if err := PauseBridgeISMs(ctx, ak); err != nil {
+			return nil, err
+		}
 		return mm.RunMigrations(ctx, cfg, fromVM)
 	}
 }
@@ -100,6 +104,9 @@ func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 	if err := CloseBridgeRoutes(ctx, ak); err != nil {
+		panic(fmt.Errorf("v13 fork: %w", err))
+	}
+	if err := PauseBridgeISMs(ctx, ak); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 }

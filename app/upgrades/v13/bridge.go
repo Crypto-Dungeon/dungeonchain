@@ -77,3 +77,53 @@ func CloseBridgeRoutes(ctx context.Context, ak *upgrades.AppKeepers) error {
 	}
 	return nil
 }
+
+// PausedISMs are pausable ISMs v13 switches on at the fork. The mailbox's
+// default ISM is an aggregation that requires this pausable ISM, so pausing
+// it refuses every inbound Hyperlane message (ETH, SOL, Base) until the new
+// admin key unpauses it after the bridge validator keys are replaced.
+var PausedISMs = []string{
+	"dungeon1ymx3zpkhkm5ys7aw6cgx964m3pmnq0tfmyu9l709dx0khhja3mqq9r6dl7", // hpl-production-pausableIsm
+}
+
+// PauseBridgeISMs pauses each ISM as RecoveryAddress (its owner) and checks
+// pause_info. Safe to run twice.
+func PauseBridgeISMs(ctx context.Context, ak *upgrades.AppKeepers) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	b, err := ak.AccountKeeper.AddressCodec().StringToBytes(RecoveryAddress)
+	if err != nil {
+		return err
+	}
+	owner := sdk.AccAddress(b)
+	exec := wasmkeeper.NewDefaultPermissionKeeper(ak.WasmKeeper)
+	paused := func(c sdk.AccAddress) (bool, error) {
+		res, err := ak.WasmKeeper.QuerySmart(sdkCtx, c, []byte(`{"pausable":{"pause_info":{}}}`))
+		if err != nil {
+			return false, err
+		}
+		var r struct {
+			Paused bool `json:"paused"`
+		}
+		return r.Paused, json.Unmarshal(res, &r)
+	}
+	for _, ism := range PausedISMs {
+		cb, err := ak.AccountKeeper.AddressCodec().StringToBytes(ism)
+		if err != nil {
+			return fmt.Errorf("v13: ism %s: %w", ism, err)
+		}
+		c := sdk.AccAddress(cb)
+		if p, err := paused(c); err != nil {
+			return fmt.Errorf("v13: pause_info of %s: %w", ism, err)
+		} else if p {
+			continue
+		}
+		if _, err := exec.Execute(sdkCtx, c, owner, []byte(`{"pausable":{"pause":{}}}`), nil); err != nil {
+			return fmt.Errorf("v13: pause %s: %w", ism, err)
+		}
+		if p, err := paused(c); err != nil || !p {
+			return fmt.Errorf("v13: %s not paused after pause (err=%v)", ism, err)
+		}
+		sdkCtx.Logger().Info("v13: inbound bridge ISM paused", "ism", ism)
+	}
+	return nil
+}

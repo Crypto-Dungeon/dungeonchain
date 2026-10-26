@@ -108,6 +108,11 @@ func TestV13ForkOnMainnetState(t *testing.T) {
 			got := a.BankKeeper.GetBalance(bctx, recovery, denom).Amount.Sub(recBefore)
 			// thief + unbonding + hot dust, minus the three rotation fees
 			require.True(t, got.GTE(thiefBefore.Add(unbonding).Add(opHeld).Sub(fees)), "recovery got %s", got)
+			for _, ism := range v13.PausedISMs {
+				res, err := a.WasmKeeper.QuerySmart(bctx, addr(ism), []byte(`{"pausable":{"pause_info":{}}}`))
+				require.NoError(t, err)
+				require.JSONEq(t, `{"paused":true}`, string(res), ism)
+			}
 			for _, cr := range v13.ClosedRoutes {
 				res, err := a.WasmKeeper.QuerySmart(bctx, addr(cr.Warp), []byte(`{"router":{"list_routes":{}}}`))
 				require.NoError(t, err)
