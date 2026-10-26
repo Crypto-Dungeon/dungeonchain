@@ -19,7 +19,9 @@ var DAORecoveries = []func(context.Context, *upgrades.AppKeepers) error{RecoverD
 
 func recoverDAOs(ctx context.Context, ak *upgrades.AppKeepers) error {
 	for _, recoverDAO := range DAORecoveries {
-		if err := recoverDAO(ctx, ak); err != nil { return err }
+		if err := recoverDAO(ctx, ak); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -66,7 +68,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 		if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
 			return nil, err
 		}
-		if err := recoverDAOs(ctx, ak); err != nil { return nil, err }
+		if err := recoverDAOs(ctx, ak); err != nil {
+			return nil, err
+		}
 		return mm.RunMigrations(ctx, cfg, fromVM)
 	}
 }
@@ -88,7 +92,9 @@ func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 	if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
-	if err := recoverDAOs(ctx, ak); err != nil { panic(fmt.Errorf("v13 fork: %w", err)) }
+	if err := recoverDAOs(ctx, ak); err != nil {
+		panic(fmt.Errorf("v13 fork: %w", err))
+	}
 }
 
 // Recover performs the state correction. Safe to run twice: a second run finds
