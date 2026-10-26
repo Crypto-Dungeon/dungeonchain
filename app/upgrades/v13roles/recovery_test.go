@@ -84,5 +84,5 @@ func TestRecoveryManifestScope(t *testing.T) {
 		}
 	}
 	require.Equal(t, 1, immutable, "immutable Fantasy must remain immutable")
-	require.EqualValues(t, v13.ForkHeight+1, ForkHeight)
+	require.Equal(t, Name, Upgrade.UpgradeName)
 }

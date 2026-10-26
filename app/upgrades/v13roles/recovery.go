@@ -15,22 +15,27 @@ import (
 	"github.com/Crypto-Dungeon/dungeonchain/app/upgrades"
 	v13 "github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v13"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
 const Name = "v13-contract-roles"
 
-// Proposed first height after the halted v13.0.1 block. Requires explicit
-// validator coordination before release or deployment; not a live migration.
-const ForkHeight int64 = 22368770
+// Registering this handler does not activate it. Governance must approve a
+// software-upgrade plan with this name and a future, coordinated height.
+var Upgrade = upgrades.Upgrade{UpgradeName: Name, CreateUpgradeHandler: CreateUpgradeHandler}
 
-var Fork = upgrades.Fork{UpgradeName: Name, UpgradeHeight: ForkHeight, BeginForkLogic: RunFork}
-
-func RunFork(ctx sdk.Context, keepers *upgrades.AppKeepers) {
-	if ctx.ChainID() != "dungeon-1" {
-		return
-	}
-	if err := Recover(ctx, keepers, Targets); err != nil {
-		panic(fmt.Errorf("%s: %w", Name, err))
+func CreateUpgradeHandler(_ upgrades.ModuleManager, _ module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
+	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		if sdkCtx.ChainID() != "dungeon-1" || plan.Name != Name || plan.Height != sdkCtx.BlockHeight() {
+			return nil, fmt.Errorf("%s requires the approved dungeon-1 plan at its scheduled height", Name)
+		}
+		if err := Recover(ctx, keepers, Targets); err != nil {
+			return nil, err
+		}
+		// No module versions or dependencies change in this correction.
+		return fromVM, nil
 	}
 }
 

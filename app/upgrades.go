@@ -20,8 +20,8 @@ import (
 
 // Upgrades list of chain upgrades
 // ponytail: v10 is a dependency-only security upgrade (wasmd/wasmvm patch), no state changes → noop handler.
-var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade, v8.Upgrade, v9.Upgrade, noop.NewUpgrade("v10"), noop.NewUpgrade("v11"), v12.Upgrade, v13.Upgrade}
-var Forks = []upgrades.Fork{v4.Upgrade, v13.Fork, v13roles.Fork}
+var Upgrades = []upgrades.Upgrade{v5.Upgrade, v6.Upgrade, v7.Upgrade, v8.Upgrade, v9.Upgrade, noop.NewUpgrade("v10"), noop.NewUpgrade("v11"), v12.Upgrade, v13.Upgrade, v13roles.Upgrade}
+var Forks = []upgrades.Fork{v4.Upgrade, v13.Fork}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *ChainApp) RegisterUpgradeHandlers() {

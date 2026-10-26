@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,7 +43,7 @@ func TestV13RolesOnMainnetState(t *testing.T) {
 	require.NoError(t, err)
 	_, err = a.EndBlocker(ctx)
 	require.NoError(t, err)
-	ctx = ctx.WithBlockHeight(v13roles.ForkHeight).WithBlockTime(ctx.BlockTime().Add(6 * time.Second))
+	ctx = ctx.WithBlockHeight(v13.ForkHeight + 1).WithBlockTime(ctx.BlockTime().Add(6 * time.Second))
 	keepers := &upgrades.AppKeepers{AccountKeeper: &a.AccountKeeper, WasmKeeper: &a.WasmKeeper, GetStoreKey: a.GetKey}
 	addr := func(s string) sdk.AccAddress {
 		b, err := a.AccountKeeper.AddressCodec().StringToBytes(s)
@@ -58,7 +59,15 @@ func TestV13RolesOnMainnetState(t *testing.T) {
 	require.NotEqual(t, v13.RecoveryAddress, originalOwner, "follow-up must not run at the original v13 height")
 	hookCtx, _ := ctx.CacheContext()
 	BeginBlockForks(hookCtx, a)
-	require.NotEqual(t, firstBefore, a.WasmKeeper.QueryRaw(hookCtx, first, []byte("config")), "registered follow-up fork must execute at its proposed height")
+	require.Equal(t, firstBefore, a.WasmKeeper.QueryRaw(hookCtx, first, []byte("config")), "there must be no automatic follow-up fork")
+	handler := v13roles.CreateUpgradeHandler(a.ModuleManager, a.configurator, keepers)
+	_, err = handler(hookCtx, upgradetypes.Plan{Name: "wrong-plan", Height: hookCtx.BlockHeight()}, a.ModuleManager.GetVersionMap())
+	require.Error(t, err)
+	_, err = handler(hookCtx, upgradetypes.Plan{Name: v13roles.Name, Height: hookCtx.BlockHeight() + 1}, a.ModuleManager.GetVersionMap())
+	require.Error(t, err)
+	_, err = handler(hookCtx, upgradetypes.Plan{Name: v13roles.Name, Height: hookCtx.BlockHeight()}, a.ModuleManager.GetVersionMap())
+	require.NoError(t, err)
+	require.NotEqual(t, firstBefore, a.WasmKeeper.QueryRaw(hookCtx, first, []byte("config")), "approved scheduled handler must recover ownership")
 	require.Equal(t, firstBefore, a.WasmKeeper.QueryRaw(ctx, first, []byte("config")), "test hook writes stay in the disposable cache")
 	broken := append([]v13roles.Target(nil), v13roles.Targets...)
 	broken[len(broken)-1].ConfigHash = "incorrect"
