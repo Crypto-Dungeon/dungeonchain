@@ -3,7 +3,7 @@ name: public cloud testnet
 on:
   push:
     tags:
-    - 'v[0-9]+.[0-9]+.[0-9]+' # ignore rc
+    - 'testnet-v[0-9]+.[0-9]+.[0-9]+'
 
 # https://github.com/<org>/<repo>/settings/secrets/actions/new
 # - HCLOUD_TOKEN    # console.hetzner.cloud -> [select project] -> security -> API Tokens -> Generate API Token (Red)
@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   launch-testnet:
+    if: ${{ vars.ENABLE_PUBLIC_CLOUD_TESTNET == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
