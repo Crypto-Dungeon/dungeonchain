@@ -51,6 +51,15 @@ func TestV13RolesOnMainnetState(t *testing.T) {
 	}
 	first := addr(v13roles.Targets[0].Address)
 	firstBefore := a.WasmKeeper.QueryRaw(ctx, first, []byte("config"))
+	var original map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(firstBefore, &original))
+	var originalOwner string
+	require.NoError(t, json.Unmarshal(original["owner"], &originalOwner))
+	require.NotEqual(t, v13.RecoveryAddress, originalOwner, "follow-up must not run at the original v13 height")
+	hookCtx, _ := ctx.CacheContext()
+	BeginBlockForks(hookCtx, a)
+	require.NotEqual(t, firstBefore, a.WasmKeeper.QueryRaw(hookCtx, first, []byte("config")), "registered follow-up fork must execute at its proposed height")
+	require.Equal(t, firstBefore, a.WasmKeeper.QueryRaw(ctx, first, []byte("config")), "test hook writes stay in the disposable cache")
 	broken := append([]v13roles.Target(nil), v13roles.Targets...)
 	broken[len(broken)-1].ConfigHash = "incorrect"
 	require.Error(t, v13roles.Recover(ctx, keepers, broken))
@@ -58,6 +67,9 @@ func TestV13RolesOnMainnetState(t *testing.T) {
 	mismatched := append([]v13roles.Target(nil), v13roles.Targets...)
 	mismatched[0].MigrationAdmin = "unexpected"
 	require.ErrorContains(t, v13roles.Recover(ctx, keepers, mismatched), "code/admin mismatch")
+	mismatched = append([]v13roles.Target(nil), v13roles.Targets...)
+	mismatched[0].CodeHash = "incorrect"
+	require.ErrorContains(t, v13roles.Recover(ctx, keepers, mismatched), "code hash mismatch")
 	configs := map[string]map[string]json.RawMessage{}
 	balances := map[string]string{}
 	for _, target := range v13roles.Targets {
