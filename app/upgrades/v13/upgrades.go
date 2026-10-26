@@ -23,6 +23,8 @@ import (
 //     so the 2026-11-14 maturity never lands in the stolen wallet.
 //  3. Anything still sitting liquid in CompromisedHotWallet moves to
 //     RecoveryAddress as well.
+//  4. The three operator validators rotate to fresh consensus keys
+//     (rotate.go), fee paid from RecoveryAddress.
 //
 // Amounts are read from state at upgrade height, never hardcoded, so the
 // handler is correct whatever moves between now and the halt. It refuses to
@@ -36,6 +38,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 		if err := Recover(ctx, ak); err != nil {
 			return nil, err
 		}
+		if err := RotateKeys(ctx, ak, Rotations); err != nil {
+			return nil, err
+		}
 		return mm.RunMigrations(ctx, cfg, fromVM)
 	}
 }
@@ -46,6 +51,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 // must halt the chain, not slip into consensus.
 func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 	if err := Recover(ctx, ak); err != nil {
+		panic(fmt.Errorf("v13 fork: %w", err))
+	}
+	if err := RotateKeys(ctx, ak, Rotations); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 }

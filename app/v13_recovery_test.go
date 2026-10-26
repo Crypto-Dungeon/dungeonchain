@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 	"time"
 
 	"cosmossdk.io/math"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -41,6 +43,10 @@ func (f v13Fixture) RunMigrations(context.Context, module.Configurator, module.V
 // After the handler: thief and hot wallet empty, no unbonding left, recovery
 // holds everything, not-bonded pool shrank by the unbonding total.
 func TestV13Recovery(t *testing.T) {
+	// mainnet validators do not exist in the test app; TestV13RotateKeys covers rotation
+	saved := v13.Rotations
+	v13.Rotations = nil
+	t.Cleanup(func() { v13.Rotations = saved })
 	app := Setup(t)
 	ctx := app.NewContextLegacy(false, cmtproto.Header{Height: 2, Time: time.Now().UTC()})
 	denom, err := app.StakingKeeper.BondDenom(ctx)
@@ -119,4 +125,59 @@ func TestV13Recovery(t *testing.T) {
 	require.True(t, app.BankKeeper.GetAllBalances(ctx, thief).IsZero())
 	require.Equal(t, want.Add(stolen...), app.BankKeeper.GetAllBalances(ctx, recovery))
 	require.Equal(t, int64(22368769), v13.ForkHeight, "fork must run at the first block after the 2026-10-26 11:02 UTC halt")
+}
+
+// TestV13RotateKeys queues a consensus key rotation for the test validator via
+// the real staking msg server, with the fee paid by the recovery address, and
+// checks a second run is a no-op.
+func TestV13RotateKeys(t *testing.T) {
+	app := Setup(t)
+	ctx := app.NewContextLegacy(false, cmtproto.Header{Height: 2, Time: time.Now().UTC()})
+	cp := ctx.ConsensusParams()
+	cp.Validator = &cmtproto.ValidatorParams{PubKeyTypes: []string{"ed25519"}}
+	ctx = ctx.WithConsensusParams(cp)
+
+	vals, err := app.StakingKeeper.GetAllValidators(ctx)
+	require.NoError(t, err)
+	require.Len(t, vals, 1)
+	params, err := app.StakingKeeper.GetParams(ctx)
+	require.NoError(t, err)
+
+	b, err := app.AccountKeeper.AddressCodec().StringToBytes(v13.RecoveryAddress)
+	require.NoError(t, err)
+	recovery := sdk.AccAddress(b)
+	seed := sdk.NewCoins(sdk.NewInt64Coin(params.BondDenom, 5_000_000))
+	require.NoError(t, app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, seed))
+	require.NoError(t, app.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, recovery, seed))
+
+	newPk := ed25519.GenPrivKey().PubKey()
+	rot := []v13.KeyRotation{{Validator: vals[0].OperatorAddress, NewPubKey: base64.StdEncoding.EncodeToString(newPk.Bytes())}}
+	ak := &upgrades.AppKeepers{AccountKeeper: &app.AccountKeeper, BankKeeper: &app.BankKeeper, StakingKeeper: app.StakingKeeper}
+
+	require.NoError(t, v13.RotateKeys(ctx, ak, rot))
+	pending, err := app.StakingKeeper.PendingConsKeyRotations(ctx)
+	require.NoError(t, err)
+	require.Len(t, pending, 1)
+	left := app.BankKeeper.GetBalance(ctx, recovery, params.BondDenom).Amount
+	require.True(t, left.Equal(math.NewInt(5_000_000).Sub(params.KeyRotationFee.Amount)), "fee comes from the recovery address")
+
+	require.NoError(t, v13.RotateKeys(ctx, ak, rot), "second run is a no-op")
+	require.True(t, app.BankKeeper.GetBalance(ctx, recovery, params.BondDenom).Amount.Equal(left))
+}
+
+// TestV13RotationsWellFormed checks the hardcoded mainnet rotations decode:
+// valid valoper addresses, 32-byte ed25519 keys, all distinct.
+func TestV13RotationsWellFormed(t *testing.T) {
+	app := Setup(t)
+	require.Len(t, v13.Rotations, 3)
+	seen := map[string]bool{}
+	for _, r := range v13.Rotations {
+		_, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(r.Validator)
+		require.NoError(t, err, r.Validator)
+		raw, err := base64.StdEncoding.DecodeString(r.NewPubKey)
+		require.NoError(t, err)
+		require.Len(t, raw, 32)
+		require.False(t, seen[r.Validator] || seen[r.NewPubKey])
+		seen[r.Validator], seen[r.NewPubKey] = true, true
+	}
 }
