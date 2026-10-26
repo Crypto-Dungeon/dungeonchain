@@ -1,7 +1,7 @@
-name: Release v12 candidate
+name: Release validator binary
 on:
   push:
-    tags: ['v12.*']
+    tags: ['v12.*', 'v13.*']
 permissions:
   contents: write
 jobs:
@@ -19,4 +19,4 @@ jobs:
       - name: Create draft validator release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --draft --title "Dungeon $GITHUB_REF_NAME" --notes-file docs/upgrades/v12.md build/v12-release/*.tar.gz build/v12-release/SHA256SUMS
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "Dungeon $GITHUB_REF_NAME" --notes-file "docs/upgrades/${GITHUB_REF_NAME%%.*}.md" build/v12-release/*.tar.gz build/v12-release/SHA256SUMS
