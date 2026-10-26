@@ -13,6 +13,19 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
+// DAORecoveries are the consensus-time contract recoveries. Tests without a
+// wasm keeper replace this list, just as they replace RoleTransfers/Rotations.
+var DAORecoveries = []func(context.Context, *upgrades.AppKeepers) error{RecoverDRAGUU}
+
+func recoverDAOs(ctx context.Context, ak *upgrades.AppKeepers) error {
+	for _, recoverDAO := range DAORecoveries {
+		if err := recoverDAO(ctx, ak); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // CreateUpgradeHandler returns the v13 handler: recovery of the 2026-10-25
 // hot-wallet theft. It is a pure state correction, no module migrations and no
 // dependency changes:
@@ -31,7 +44,9 @@ import (
 //     the thief sign (decorators/frozen.go).
 //  6. Contract roles still held by the hot wallet (cw721 minter-owners, CLOB
 //     admins) move to RecoveryAddress (contracts.go).
-//  7. The DGN warp route to Base is closed until it has new keys (bridge.go).
+//  7. DRAGUU bootstrap governance moves to the clean wallet; the old proposal
+//     module is quarantined to remove historical proposal execution authority.
+//  8. The DGN warp route to Base is closed until it has new keys (bridge.go).
 //
 // Amounts are read from state at upgrade height, never hardcoded, so the
 // handler is correct whatever moves between now and the halt. It refuses to
@@ -52,6 +67,9 @@ func CreateUpgradeHandler(mm upgrades.ModuleManager, cfg module.Configurator, ak
 			return nil, err
 		}
 		if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
+			return nil, err
+		}
+		if err := recoverDAOs(ctx, ak); err != nil {
 			return nil, err
 		}
 		if err := CloseBridgeRoutes(ctx, ak); err != nil {
@@ -76,6 +94,9 @@ func RunForkLogic(ctx sdk.Context, ak *upgrades.AppKeepers) {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 	if err := TransferContractRoles(ctx, ak, RoleTransfers); err != nil {
+		panic(fmt.Errorf("v13 fork: %w", err))
+	}
+	if err := recoverDAOs(ctx, ak); err != nil {
 		panic(fmt.Errorf("v13 fork: %w", err))
 	}
 	if err := CloseBridgeRoutes(ctx, ak); err != nil {
