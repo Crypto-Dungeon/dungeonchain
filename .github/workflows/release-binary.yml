@@ -7,16 +7,71 @@ permissions:
 jobs:
   candidate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOMAXPROCS: '4'
+      BUILD_PARALLELISM: '2'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.1'
-      - run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-11
-      - run: VERSION="${GITHUB_REF_NAME#v}" bash scripts/build_v12_release.sh
+      - name: Select the exact release plan and notes
+        id: release
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          case "$version" in
+            13.0.2)
+              plan=v13-contract-roles
+              notes=docs/upgrades/v13.0.2.md
+              git merge-base --is-ancestor "$GITHUB_SHA" origin/upgrade/v13-recovery
+              git diff --exit-code e0df5abbdaa8bab5f6f2f0ae5bdc410b7aa27dfe HEAD -- app cmd go.mod go.sum third_party
+              ;;
+            13.0.1) plan=v13; notes=docs/upgrades/v13.md ;;
+            12.*) plan=v12; notes=docs/upgrades/v12.md ;;
+            *) echo 'Release plan and notes must be declared explicitly'; exit 1 ;;
+          esac
+          test -f "$notes"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "plan=$plan" >> "$GITHUB_OUTPUT"
+          echo "notes=$notes" >> "$GITHUB_OUTPUT"
+      - run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-11 file curl
+      - name: Test application code
+        run: go test -p 2 -tags pebbledb ./app/... -count=1 -v > "$RUNNER_TEMP/validator-release-tests.txt" 2>&1
+      - name: Build final binary from clean tagged source
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          PLAN_NAME: ${{ steps.release.outputs.plan }}
+          OUT_DIR: ${{ runner.temp }}/validator-release
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+          bash scripts/build_v12_release.sh
+          cp "$RUNNER_TEMP/validator-release-tests.txt" "$OUT_DIR/VALIDATION.txt"
+          cd "$OUT_DIR"
+          sha256sum "dungeonchain-$VERSION-linux-amd64.tar.gz" SHA256SUMS version.txt provenance.txt VALIDATION.txt > ASSET-SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validator-release-${{ github.ref_name }}-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/validator-release/*.tar.gz
+            ${{ runner.temp }}/validator-release/SHA256SUMS
+            ${{ runner.temp }}/validator-release/ASSET-SHA256SUMS
+            ${{ runner.temp }}/validator-release/version.txt
+            ${{ runner.temp }}/validator-release/provenance.txt
+            ${{ runner.temp }}/validator-release/VALIDATION.txt
       - name: Create draft validator release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --draft --title "Dungeon $GITHUB_REF_NAME" --notes-file "docs/upgrades/${GITHUB_REF_NAME%%.*}.md" build/v12-release/*.tar.gz build/v12-release/SHA256SUMS
+          VERSION: ${{ steps.release.outputs.version }}
+          NOTES_FILE: ${{ steps.release.outputs.notes }}
+          OUT_DIR: ${{ runner.temp }}/validator-release
+        run: |
+          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "Dungeon $GITHUB_REF_NAME" --notes-file "$NOTES_FILE" \
+            "$OUT_DIR/dungeonchain-$VERSION-linux-amd64.tar.gz" "$OUT_DIR/SHA256SUMS" "$OUT_DIR/ASSET-SHA256SUMS" \
+            "$OUT_DIR/version.txt" "$OUT_DIR/provenance.txt" "$OUT_DIR/VALIDATION.txt"
