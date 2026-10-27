@@ -30,6 +30,7 @@ jobs:
               git merge-base --is-ancestor "$GITHUB_SHA" origin/upgrade/v13-recovery
               git diff --exit-code e0df5abbdaa8bab5f6f2f0ae5bdc410b7aa27dfe HEAD -- app cmd go.mod go.sum third_party
               ;;
+            13.1.*) plan=v13.1; notes=docs/upgrades/v13.1.0.md ;;
             13.0.1) plan=v13; notes=docs/upgrades/v13.md ;;
             12.*) plan=v12; notes=docs/upgrades/v12.md ;;
             *) echo 'Release plan and notes must be declared explicitly'; exit 1 ;;

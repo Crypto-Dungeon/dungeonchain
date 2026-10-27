@@ -19,7 +19,11 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
-const Name = "v13-contract-roles"
+// v13.1 (was "v13-contract-roles" in the published v13.0.2 binary): one plan now
+// carries this role correction and the fee-deduction fix in app/ante.go. The new
+// name means a node still holding the v13.0.2 binary halts at the plan instead of
+// running on without fee deduction.
+const Name = "v13.1"
 
 // Registering this handler does not activate it. Governance must approve a
 // software-upgrade plan with this name and a future, coordinated height.

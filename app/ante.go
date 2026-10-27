@@ -103,7 +103,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		// Fee exemption MUST come before globalfee FeeDecorator.
 		decorators.NewFeeExemptionAnteDecorator(options.ExemptAddresses, postFeeHandler),
 		globalfeeante.NewFeeDecorator(options.BypassMinFeeMsgTypes, options.GlobalFeeKeeper, 2_000_000),
-		// v14: actually charge the fee. From v6 to v13 the declared fee was checked
+		// v13.1: actually charge the fee. From v6 to v13 the declared fee was checked
 		// against the globalfee minimum and never debited (private report, 2026-10-27).
 		// Exempt signers jump to postFeeHandler above and skip this too.
 		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
