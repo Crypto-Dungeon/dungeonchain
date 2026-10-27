@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// v13.1 fee deduction. Until v13.1 the ante chain checked the declared fee and never
+// Fee deduction (v13.1.1, plan v13-contract-roles). Until then the ante chain checked the declared fee and never
 // debited it, so a fee 100x the signer's balance was accepted (private report,
 // 2026-10-27). These are that proof of concept, inverted.
 
@@ -130,14 +130,13 @@ func TestV131ExemptSignerPaysNoFee(t *testing.T) {
 	require.True(t, app.BankKeeper.GetBalance(ctx, fc, sdk.DefaultBondDenom).Amount.IsZero())
 }
 
-// One plan carries both changes. The old v13.0.2 plan name must be gone so a node
-// still holding that binary halts at v13.1 instead of running without fees.
+// Proposal 45 (plan v13-contract-roles) carries both changes; no other new plan.
 func TestV131SinglePlan(t *testing.T) {
 	names := map[string]bool{}
 	for _, u := range Upgrades {
 		names[u.UpgradeName] = true
 	}
-	require.True(t, names["v13.1"])
-	require.False(t, names["v13-contract-roles"])
+	require.True(t, names["v13-contract-roles"])
+	require.False(t, names["v13.1"])
 	require.False(t, names["v14"])
 }
