@@ -1,0 +1,86 @@
+CryptoDungeon validator recovery: engineering review and handoff
+Prepared 2026-10-27. Candidate 13.0.3-rc.1; plan v13-cryptodungeon-operator.
+Source commit: 794ee78945704029bed0d462a462435c4d741969
+Base: published v13.0.2, 4afd60cbc5a13110ffe37d441b3253b251f8a4a6.
+
+RESULT: Ready for validator source review and upgrade coordination.
+No unresolved permission bypass was found in the tested scope. This is an
+engineering review by the implementing agent, not an independent external audit.
+The candidate is local: no new release published, proposal submitted, live binary
+switched, controller authority activated, or recovery height selected.
+
+WHAT THE UPGRADE DOES
+The old CryptoDungeon operator key remains frozen. At the approved activation,
+the handler removes that operator's existing authorizations, redirects its
+withdrawal destination, and grants 13 limited SDK message types to the selected
+recovery controller ending 0653lh. The validator identity, current consensus
+key, staking status, funds and third-party delegations are preserved. There is
+no automatic fund transfer or commission withdrawal. Other validators are outside
+this recovery's scope.
+
+REHEARSAL AND TEST EVIDENCE
+Two fresh, isolated copies of historical mainnet state passed. The retained
+canonical version was verified against the historical block header before use:
+  State height: 22368768
+  App hash: 3FC48346799264FA7D38F83DF2B93D8E7D79BA7B012D0D1B71AA4AE0104D7862
+The replay included the original recovery, its queued consensus-key rotation
+delay, the contract-role upgrade and this operator upgrade through actual
+FinalizeBlock/Commit. Synthetic rehearsal heights are not proposed heights.
+Both runs produced the same final app hash at synthetic height 22368773:
+  D1C226415B8EBF70F0913A720A746A3ACF23893B471260667F8B672AD27AE6CE
+All unrelated module store fingerprints matched before/after the operator
+handler; distribution changed only at the withdrawal-address key. Validator
+record bytes and accrued commission were preserved.
+
+Full SDK simulations accepted controller-authorized validator management and a
+synthetic governance vote (gas 53279 and 39089 respectively). Old-key direct
+signing and an unauthorized bank recipient were rejected. Real CheckTx rejected
+a forged controller signature. SDK simulation skips signing by design; the
+separate ADR-36 wallet proof establishes access to the pinned controller key.
+
+The complete repository command passed: go test -p 2 -tags pebbledb ./... -count=1.
+The default command skips opt-in extended simulations/import-export checks and
+state-home tests; the new state rehearsal was run separately twice. This is not
+a claim that every optional randomized test configuration was run.
+
+SECURITY REVIEW
+Reviewed: activation marker and prior-upgrade requirement; exact chain/plan/
+height/account/public-key/consensus-key pins; single-use consent bound to the
+exact root MsgExec; ordinary SDK grants and cryptographic signature checks;
+second execution-time scope check; forbidden nested/runtime recovery paths;
+restricted bank recipient and withdrawal address; continued old-key/fee-granter
+and other frozen-account rejection; atomic upgrade and batch failure rollback.
+No account public keys are replaced. No new store or protobuf type is added.
+
+BUILD
+The Linux amd64 candidate was built from a clean native Linux checkout at the
+source commit above, using Go 1.27.1 and checksum-verified WasmVM 3.0.8. The ELF
+is statically linked. Binary/version/provenance checksums verified successfully;
+the binary reports WasmVM 3.0.8. ASSET-SHA256SUMS also covers both archives, source
+diff and evidence. The source archive contains the committed tree, not keyrings
+or credentials. Remote CI has not run; the candidate branch is not pushed.
+
+CURRENT LIMITS AND REQUIRED SEQUENCE
+The historical rehearsal does not replace a fresh activation preflight. Current
+public state at height 22404477 matched the operator/controller public-key and
+consensus-key pins, old withdrawal destination and zero old-operator grants.
+Proposal 45 was still voting and its prior-upgrade completion marker was absent.
+Wallet signature proof does not establish exclusive custody or host security.
+Controller account numbers must remain exact uint64 strings in signing clients.
+
+1. Obtain independent validator source review; land the reviewed source on the
+   release branch, run candidate CI, and authorize the final v13.0.3 publication.
+2. Allow proposal 45's v13-contract-roles upgrade at 22500000 to execute first;
+   confirm its completion marker and re-check all public state pins.
+3. Agree a later recovery height with time for a separate governance vote and
+   validator preparation. Do not submit a competing software-upgrade plan while
+   the prior plan is pending: the SDK holds only one pending plan.
+4. Use the exact new plan name v13-cryptodungeon-operator. Stage the final binary
+   for the agreed handoff; do not switch the running binary early. The SDK's
+   BINARY UPDATED BEFORE TRIGGER guard is expected before its activation height.
+5. After activation, verify the completion marker, controller withdrawal address,
+   13 scoped grants, unchanged validator record and continued old-key rejection.
+   Manage through clean-wallet SDK authz; never import its key on a validator host.
+
+No signing keys, keyrings, consensus WAL or private-validator files were copied
+into the rehearsal. No mainnet transaction was broadcast during this work.

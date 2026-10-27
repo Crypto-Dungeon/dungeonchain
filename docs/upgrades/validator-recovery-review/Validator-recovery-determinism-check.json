@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "independent_disposable_runs": 2,
+  "source_height": 22368768,
+  "source_app_hash": "3FC48346799264FA7D38F83DF2B93D8E7D79BA7B012D0D1B71AA4AE0104D7862",
+  "final_synthetic_height": 22368773,
+  "identical_final_app_hash": "D1C226415B8EBF70F0913A720A746A3ACF23893B471260667F8B672AD27AE6CE",
+  "identical_store_fingerprints": true,
+  "identical_simulation_gas": true,
+  "mainnet_changed": false
+}

@@ -1,0 +1,48 @@
+Candidate validation logs. Local disposable state only; no mainnet broadcast.
+
+=== operator-recovery-repository-tests-final.log ===
+ok  	github.com/Crypto-Dungeon/dungeonchain/app	6.202s
+ok  	github.com/Crypto-Dungeon/dungeonchain/app/decorators	0.044s
+?   	github.com/Crypto-Dungeon/dungeonchain/app/operatorrecovery	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/params	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/noop	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v1	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v12	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v13	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v13operator	[no test files]
+ok  	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v13roles	0.071s
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v4	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v5	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v6	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v7	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v8	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/app/upgrades/v9	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/cmd/dungeond	[no test files]
+?   	github.com/Crypto-Dungeon/dungeonchain/internal/ibctest	[no test files]
+
+=== operator-mainnet-rehearsal.log ===
+=== RUN   TestOperatorRecoveryOnMainnetState
+    operator_recovery_mainnet_test.go:75: restoring canonical retained pre-fork version on the marked disposable copy only
+    operator_recovery_mainnet_test.go:122: source height 22368768, app hash 3FC48346799264FA7D38F83DF2B93D8E7D79BA7B012D0D1B71AA4AE0104D7862
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368769
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368770
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368771
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368772
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368773
+--- PASS: TestOperatorRecoveryOnMainnetState (68.38s)
+PASS
+ok  	github.com/Crypto-Dungeon/dungeonchain/app	70.573s
+
+=== operator-mainnet-rehearsal-repeat.log ===
+=== RUN   TestOperatorRecoveryOnMainnetState
+    operator_recovery_mainnet_test.go:75: restoring canonical retained pre-fork version on the marked disposable copy only
+    operator_recovery_mainnet_test.go:122: source height 22368768, app hash 3FC48346799264FA7D38F83DF2B93D8E7D79BA7B012D0D1B71AA4AE0104D7862
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368769
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368770
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368771
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368772
+    operator_recovery_mainnet_test.go:135: FinalizeBlock/Commit on disposable copy at synthetic height 22368773
+--- PASS: TestOperatorRecoveryOnMainnetState (67.98s)
+PASS
+ok  	github.com/Crypto-Dungeon/dungeonchain/app	70.175s

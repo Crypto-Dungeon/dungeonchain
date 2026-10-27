@@ -1061,7 +1061,7 @@ func NewChainApp(
 
 	app.ModuleManager.RegisterInvariants(app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	err = app.ModuleManager.RegisterServices(app.configurator)
+	err = app.ModuleManager.RegisterServices(app.operatorRecoveryConfigurator())
 	if err != nil {
 		panic(err)
 	}
@@ -1146,6 +1146,7 @@ func NewChainApp(
 			ExemptAddresses:      app.FeeExemptAddresses,
 			FrozenAccounts:       mustDecodeAccounts(app.AccountKeeper.AddressCodec(), v13.FrozenAccounts()),
 			FrozenFromHeight:     v13.ForkHeight,
+			OperatorRecovery:     app.operatorRecoveryRule(),
 			Codec:                app.appCodec,
 			// ConsumerKeeper:       app.ConsumerKeeper,
 		},
