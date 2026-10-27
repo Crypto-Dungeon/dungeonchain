@@ -1,0 +1,47 @@
+name: Validator operator recovery candidate
+on:
+  push:
+    branches: [recovery/cryptodungeon-operator-control]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: validator-operator-candidate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOMAXPROCS: '4'
+      BUILD_PARALLELISM: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+      - name: Install static release compiler
+        run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-11 file curl
+      - name: Test repository
+        run: go test -p 2 -tags pebbledb ./... -count=1 > "$RUNNER_TEMP/operator-tests.txt" 2>&1
+      - name: Build review candidate from clean source
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+          VERSION=13.0.3-rc.1 PLAN_NAME=v13-cryptodungeon-operator OUT_DIR="$RUNNER_TEMP/operator-candidate" bash scripts/build_v12_release.sh
+          cd "$RUNNER_TEMP/operator-candidate"
+          sha256sum dungeonchain-13.0.3-rc.1-linux-amd64.tar.gz > CANDIDATE-SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validator-operator-candidate-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/operator-candidate/dungeonchain-13.0.3-rc.1-linux-amd64.tar.gz
+            ${{ runner.temp }}/operator-candidate/SHA256SUMS
+            ${{ runner.temp }}/operator-candidate/CANDIDATE-SHA256SUMS
+            ${{ runner.temp }}/operator-candidate/version.txt
+            ${{ runner.temp }}/operator-candidate/provenance.txt
+            ${{ runner.temp }}/operator-tests.txt
