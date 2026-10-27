@@ -24,6 +24,12 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           case "$version" in
+            13.0.3)
+              plan=v13-cryptodungeon-operator
+              notes=docs/upgrades/v13.0.3.md
+              git merge-base --is-ancestor "$GITHUB_SHA" origin/upgrade/v13-recovery
+              git diff --exit-code 99d962881f1d1312aa193a106e9ed0f025cfbc07 HEAD -- app cmd go.mod go.sum third_party scripts/build_v12_release.sh
+              ;;
             13.0.2)
               plan=v13-contract-roles
               notes=docs/upgrades/v13.0.2.md
