@@ -20,37 +20,16 @@ jobs:
   build-docker:
     runs-on: ubuntu-latest
     steps:
-      - id: go-cache-paths
-        run: |
-          echo "go-build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
-          echo "go-mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Go ${{ env.GO_VERSION }}
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      # Cache go mod cache, used to speedup builds
-      - name: Go Mod Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
-
-      # Cache go build cache, used to speedup go test
-      - name: Go Build Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-
-      - name: Download Go Dependencies
+      # Both builders compile inside Docker. Restoring a second host Go cache
+      # exhausted the runner before compilation could finish.
+      - name: Make room on the disposable hosted runner
+        if: ${{ runner.environment == 'github-hosted' }}
         run: |
-          go mod download
-          cd interchaintest && go mod download
+          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h /
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
