@@ -1,0 +1,9 @@
+version=14.0.0-rc.2
+plan=v14-dependencies
+commit=b1eb840acdfe3e96bb1164ae03c928592c573bc0
+go=go version go1.27.4 linux/amd64
+cometbft=0.40.0
+wasmvm=3.0.9
+post_quantum_signing_supported=true
+consensus_activation=separate_governance_and_key_rotation
+dirty=false
